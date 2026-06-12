@@ -75,8 +75,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   )
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dragInsertBeforeId, setDragInsertBeforeId] = useState<string | undefined>(undefined) // undefined = 맨 끝에 삽입
 
   // ── 헬퍼 ──
   function getHoleOwner(hole: number, excludeGame: GameType): GameType | null {
@@ -167,20 +165,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
     setPlayerOrder(roomId, next)
   }
 
-  function handleOrderDrop() {
-    if (!draggingId) return
-    const ids = orderedPlayers.map(p => p.id)
-    const fromIdx = ids.indexOf(draggingId)
-    const next = [...ids]
-    next.splice(fromIdx, 1)
-    const insertIdx = dragInsertBeforeId == null
-      ? next.length
-      : next.indexOf(dragInsertBeforeId)
-    next.splice(insertIdx < 0 ? next.length : insertIdx, 0, draggingId)
-    setPlayerOrder(roomId, next)
-    setDraggingId(null)
-    setDragInsertBeforeId(undefined)
-  }
 
   // ── 렌더 ──
   const STEP_LABELS: Record<SettingsStep, string> = {
@@ -211,38 +195,15 @@ export default function GameSettings({ room, roomId, myId }: Props) {
           <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>▲▼ 버튼으로 순서 변경</p>
           {orderedPlayers.map((p, pi) => (
             <div key={p.id}>
-              {/* 삽입 위치 바 */}
-              {draggingId && draggingId !== p.id && dragInsertBeforeId === p.id && (
-                <div style={{ height: 3, background: '#3b82f6', borderRadius: 2, margin: '2px 4px' }} />
-              )}
               <div
-                draggable
-                onDragStart={() => setDraggingId(p.id)}
-                onDragEnd={() => { setDraggingId(null); setDragInsertBeforeId(undefined) }}
-                onDragOver={e => {
-                  e.preventDefault()
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const mid = rect.top + rect.height / 2
-                  if (e.clientY < mid) {
-                    setDragInsertBeforeId(p.id)
-                  } else {
-                    const idx = orderedPlayers.findIndex(x => x.id === p.id)
-                    const next = orderedPlayers[idx + 1]
-                    setDragInsertBeforeId(next ? next.id : undefined)
-                  }
-                }}
-                onDrop={handleOrderDrop}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '10px 8px', borderRadius: 8, marginBottom: 4,
                   border: '1px solid var(--border)',
-                  background: draggingId === p.id ? '#f1f5f9' : 'var(--card)',
-                  opacity: draggingId === p.id ? 0.4 : 1,
-                  cursor: 'grab',
+                  background: 'var(--card)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18, color: '#cbd5e1', lineHeight: 1, userSelect: 'none' }}>⠿</span>
                   <span style={{ fontSize: 14, fontWeight: p.id === myId ? 800 : 600 }}>{p.name}</span>
                   {p.id === myId && (
                     <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700 }}>나 (진행자)</span>
@@ -274,10 +235,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               </div>
             </div>
           ))}
-          {/* 맨 끝 삽입 바 */}
-          {draggingId && dragInsertBeforeId === undefined && (
-            <div style={{ height: 3, background: '#3b82f6', borderRadius: 2, margin: '2px 4px' }} />
-          )}
         </div>
       )}
 
