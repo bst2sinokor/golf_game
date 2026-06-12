@@ -110,7 +110,14 @@ export async function saveConfig(roomId: string, config: RoomConfig): Promise<vo
 }
 
 export async function startGame(roomId: string): Promise<void> {
-  await updateDoc(roomRef(roomId), { status: 'playing' })
+  // 1번홀 티샷 순서 랜덤 생성 (Fisher-Yates)
+  const snap = await getDoc(roomRef(roomId))
+  const teeOrder = snap.exists() ? Object.keys((snap.data() as Room).players) : []
+  for (let i = teeOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[teeOrder[i], teeOrder[j]] = [teeOrder[j], teeOrder[i]]
+  }
+  await updateDoc(roomRef(roomId), { status: 'playing', teeOrder })
 }
 
 export async function saveHoleData(

@@ -74,6 +74,7 @@ export interface Room {
   config: RoomConfig
   holes: Record<number, HoleData>
   sinperioHoles: number[]  // 신페리오용 무작위 선정 6홀
+  teeOrder?: string[]      // 1번홀 티샷 순서 (게임 시작 시 랜덤 생성)
   currentHole: number
   createdAt: number
 }

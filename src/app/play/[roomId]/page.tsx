@@ -26,6 +26,53 @@ function FitText({ text, color, fontWeight }: { text: string; color: string; fon
   )
 }
 
+// 티샷 순서 슬롯머신: ~3초간 숫자가 돌다가 본인 순서에 멈춤
+function TeeOrderSlot({ count, final, onDone }: { count: number; final: number; onDone: () => void }) {
+  const [num, setNum] = useState(1)
+  const [done, setDone] = useState(false)
+  const onDoneRef = useRef(onDone)
+  onDoneRef.current = onDone
+  useEffect(() => {
+    let cancelled = false
+    let cur = 0
+    let delay = 60
+    const start = Date.now()
+    function tick() {
+      if (cancelled) return
+      const elapsed = Date.now() - start
+      if (elapsed >= 3000) {
+        setNum(final)
+        setDone(true)
+        onDoneRef.current()
+        return
+      }
+      cur = cur % count + 1
+      setNum(cur)
+      if (elapsed > 2000) delay = Math.min(320, delay * 1.22)  // 마지막 1초 감속
+      setTimeout(tick, delay)
+    }
+    tick()
+    return () => { cancelled = true }
+  }, [count, final])
+  return (
+    <div style={{
+      margin: '0 auto', width: 130, height: 130, borderRadius: 16,
+      display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2,
+      background: done ? '#f0fdf4' : 'var(--bg)',
+      border: done ? '2px solid var(--green)' : '2px solid var(--border)',
+      transition: 'all .25s',
+      paddingTop: 0, alignContent: 'center', flexWrap: 'wrap',
+    }}>
+      <span style={{
+        fontSize: 56, fontWeight: 900, lineHeight: '126px',
+        color: done ? 'var(--green)' : 'var(--muted)',
+        transition: 'color .25s',
+      }}>{num}</span>
+      <span style={{ fontSize: 18, fontWeight: 700, color: done ? 'var(--green)' : 'var(--muted)' }}>번째</span>
+    </div>
+  )
+}
+
 // 실제 타수 → par 대비 상대 표시
 function relStr(score: number, par: number): string {
   const d = score - par
@@ -147,6 +194,17 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const [showResultPopup, setShowResultPopup] = useState(false)
   const popupShownRef = useRef(new Set<number>())
   const [pendingLvTeamA, setPendingLvTeamA] = useState<string[]>([])
+  const [teeOrderSeen, setTeeOrderSeen] = useState(true)
+  const [teeSlotDone, setTeeSlotDone] = useState(false)
+
+  useEffect(() => {
+    setTeeOrderSeen(sessionStorage.getItem(`golf_teeorder_seen_${roomId}`) === '1')
+  }, [roomId])
+
+  function dismissTeeOrder() {
+    sessionStorage.setItem(`golf_teeorder_seen_${roomId}`, '1')
+    setTeeOrderSeen(true)
+  }
 
   useEffect(() => {
     const pid = sessionStorage.getItem('golf_player')
@@ -409,6 +467,38 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px' }}>
+
+      {/* 1번홀 내 티샷 순서 팝업 (슬롯머신 연출) */}
+      {!teeOrderSeen && room.status === 'playing' && room.currentHole === 1
+        && (room.teeOrder?.length ?? 0) > 0 && room.teeOrder!.includes(myId) && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(15,23,42,.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '24px 22px',
+            width: '100%', maxWidth: 300, textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,.25)',
+          }}>
+            <p style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>1번홀 내 티샷 순서</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 18 }}>
+              {teeSlotDone ? '순서가 정해졌습니다!' : '추첨 중...'}
+            </p>
+            <div style={{ marginBottom: 20 }}>
+              <TeeOrderSlot
+                count={room.teeOrder!.length}
+                final={room.teeOrder!.indexOf(myId) + 1}
+                onDone={() => setTeeSlotDone(true)}
+              />
+            </div>
+            <button className="btn btn-green" onClick={dismissTeeOrder}
+              disabled={!teeSlotDone} style={{ opacity: teeSlotDone ? 1 : .4 }}>
+              확인
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── 헤더 ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
