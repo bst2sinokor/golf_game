@@ -154,7 +154,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 80px' }}>
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <svg width="50" height="50" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+        <svg width="42" height="42" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
           <path d="M24 3 L42 9 L42 24 C42 34 34 41 24 45 C14 41 6 34 6 24 L6 9 Z" fill="#14532d"/>
           <path d="M24 6.5 L39 11.5 L39 24 C39 32.5 32.5 38.5 24 42 C15.5 38.5 9 32.5 9 24 L9 11.5 Z" stroke="#c9a227" strokeWidth="1" fill="none"/>
           <line x1="21" y1="14" x2="21" y2="32" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -162,10 +162,10 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           <circle cx="27" cy="33" r="2" fill="#fff"/>
         </svg>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.1, margin: 0 }}>게임 설정</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 0 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, lineHeight: '20px', margin: 0 }}>게임 설정</h1>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, lineHeight: '18px', marginTop: 4 }}>
             <span style={{ fontSize: 13, color: 'var(--muted)' }}>방 코드</span>
-            <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: 3, color: 'var(--green)' }}>{roomId}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2, color: 'var(--green)' }}>{roomId}</span>
           </div>
         </div>
       </div>
