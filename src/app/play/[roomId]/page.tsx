@@ -306,7 +306,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   }, [allEnteredSafe, eventsDoneSafe, viewHole, isHost])
 
   if (!room) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>로딩 중...</div>
-  if (room.status === 'finished') { router.push(`/result/${roomId}`); return null }
+  // 게임 종료 시 결과 화면으로 이동 (결과 화면에서 ?view=1로 돌아온 경우는 조회 허용)
+  const viewOnly = typeof window !== 'undefined' && window.location.search.includes('view=1')
+  if (room.status === 'finished' && !viewOnly) { router.push(`/result/${roomId}`); return null }
 
   const players     = Object.values(room.players)
   const holePar     = room.config.holePars[viewHole - 1] ?? 4
@@ -383,8 +385,8 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 {label}
               </th>
               {holes.map(h => (
-                <th key={h} onClick={() => { if (isHost) setViewHole(h) }} style={{
-                  padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800, cursor: isHost ? 'pointer' : 'default',
+                <th key={h} onClick={() => { if (isHost || viewOnly) setViewHole(h) }} style={{
+                  padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800, cursor: isHost || viewOnly ? 'pointer' : 'default',
                   color: h === viewHole ? '#fbbf24' : h === room.currentHole ? '#6ee7b7' : '#d1fae5',
                   borderBottom: h === viewHole ? '2px solid #fbbf24' : '2px solid transparent',
                 }}>
@@ -969,8 +971,19 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         <GameSettings room={room} roomId={roomId} myId={myId} />
       )}
 
+      {/* 종료 후 조회 모드: 결과 화면 복귀 */}
+      {viewOnly && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+            <button className="btn btn-blue" onClick={() => router.push(`/result/${roomId}`)}>
+              최종 정산으로 돌아가기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 진행자: 다음 홀 */}
-      {isHost && (
+      {isHost && !viewOnly && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
           <div style={{ maxWidth: 480, margin: '0 auto' }}>
             <button className={`btn ${viewHole === 18 ? 'btn-red' : 'btn-green'}`}

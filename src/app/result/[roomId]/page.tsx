@@ -238,6 +238,9 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         })}
       </div>
 
+      <button className="btn btn-green" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
+        스코어보드 보기
+      </button>
       <button className="btn btn-gray" onClick={() => router.push('/')}>
         🏠 홈으로
       </button>
