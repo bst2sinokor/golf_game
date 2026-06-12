@@ -13,7 +13,11 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   const [myId, setMyId] = useState('')
 
   useEffect(() => {
-    setMyId(localStorage.getItem('golf_player') ?? '')
+    setMyId(
+      sessionStorage.getItem('golf_player')
+      ?? localStorage.getItem(`golf_player_${roomId}`)
+      ?? ''
+    )
     const unsub = subscribeRoom(roomId, r => setRoom(r))
     return unsub
   }, [roomId])
@@ -23,7 +27,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
   const players  = Object.values(room.players)
   const results  = calcAllResults(room)
-  const { playerTotals, settlements, holeResults, sinperioDeltas } = results
+  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers } = results
 
   // 홀별 스코어표
   const holeSummary = Array.from({ length: 18 }, (_, i) => i + 1).map(h => ({
@@ -108,24 +112,41 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         </div>
       )}
 
-      {/* 신페리오 상세 */}
+      {/* 신페리오 상세 — 플레이어간 별도 정산 */}
       {Object.keys(sinperioDeltas).length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <p style={{ fontWeight: 700, marginBottom: 4 }}>신페리오 핸디캡</p>
+          <p style={{ fontWeight: 700, marginBottom: 4 }}>신페리오 핸디캡 정산</p>
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
-            선정 홀: {room.sinperioHoles.join(', ')}홀
+            선정 홀: {room.sinperioHoles.join(', ')}홀 · 핸디캡 적용 넷스코어 타수 차 정산
           </p>
-          {players.map(p => {
-            const d = sinperioDeltas[p.id] ?? 0
-            return (
-              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontWeight: 600 }}>{p.name}</span>
-                <span style={{ fontWeight: 700, color: d >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                  {d >= 0 ? '+' : ''}{d.toLocaleString()}원
-                </span>
-              </div>
-            )
-          })}
+          {players.map(p => (
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontWeight: 600 }}>{p.name}</span>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                넷 {sinperioNetScores[p.id]?.toLocaleString() ?? '-'}타
+              </span>
+            </div>
+          ))}
+          {sinperioTransfers.length > 0 && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+              {sinperioTransfers.map((s, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 12px', borderRadius: 8, marginBottom: 6,
+                  background: 'rgba(255,255,255,.03)',
+                }}>
+                  <span style={{ fontSize: 14 }}>
+                    <span style={{ fontWeight: 700, color: '#f87171' }}>{s.from}</span>
+                    <span style={{ color: 'var(--muted)' }}> → </span>
+                    <span style={{ fontWeight: 700, color: '#4ade80' }}>{s.to}</span>
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--yellow)' }}>
+                    {s.amount.toLocaleString()}원
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

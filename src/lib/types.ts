@@ -1,4 +1,4 @@
-export type GameType = 'stroke' | 'team-match' | 'jootanwootan' | 'hussein' | 'sinperio' | 'scratch'
+export type GameType = 'stroke' | 'team-match' | 'jootanwootan' | 'hussein' | 'sinperio' | 'scratch' | 'lasvegas'
 
 export const GAME_LABELS: Record<GameType, string> = {
   stroke: '스트로크',
@@ -7,6 +7,7 @@ export const GAME_LABELS: Record<GameType, string> = {
   hussein: '후세인',
   sinperio: '신페리오 핸디캡',
   scratch: '스크레치',
+  lasvegas: '라스베가스',
 }
 
 export interface PlayerConfig {
@@ -22,7 +23,7 @@ export interface GameConfig {
   betPerHole?: number     // stroke, team-match, jootanwootan, hussein
   betPerStroke?: number   // scratch
   totalBet?: number       // sinperio
-  teams?: [string[], string[]] // team-match: [team1 playerIds, team2 playerIds]
+  teams?: { team1: string[]; team2: string[] } // team-match
 }
 
 export interface OecdConfig {
@@ -32,10 +33,18 @@ export interface OecdConfig {
   maxPerHole: number       // 홀당 페널티 상한
 }
 
+export interface BuddyConfig {
+  enabled: boolean
+  baseDistribution: number // 기본금액 분배 (첫 홀 시작 시 인당 지급)
+  buddyValue: number       // 버디값 (버디 달성 시 나머지 인당 지급)
+  collectFromTeammates?: boolean // 같은 팀에게도 버디값 받기 (기본 false: 해당 홀 팀 게임의 같은 팀원 제외)
+}
+
 export interface RoomConfig {
   holePars: number[]       // 18개 홀 파 (인덱스 0 = 1홀)
   games: GameConfig[]
   oecd: OecdConfig
+  buddy?: BuddyConfig
 }
 
 export interface OecdEvents {
@@ -50,6 +59,8 @@ export interface HoleData {
   scores: Record<string, number>
   oecd: Record<string, OecdEvents>
   jootanwootan: Record<string, 'left' | 'right'>
+  husseinPlayerId?: string     // 진행자 직접 지정 후세인
+  lasvegasTeamA?: string[]     // 진행자 직접 지정 팀A (나머지가 팀B)
 }
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished'
@@ -59,6 +70,7 @@ export interface Room {
   status: RoomStatus
   hostPlayerId: string
   players: Record<string, PlayerConfig>
+  playerOrder?: string[]   // 진행자가 지정한 플레이어 표시 순서 (player id 배열)
   config: RoomConfig
   holes: Record<number, HoleData>
   sinperioHoles: number[]  // 신페리오용 무작위 선정 6홀
@@ -77,9 +89,13 @@ export interface HoleGameResult {
 }
 
 export interface PlayerTotals {
-  gameAmount: number       // 게임 손익 합계
-  oecdPenalty: number      // OECD 페널티 합계
-  net: number              // 최종 손익
+  gameAmount: number       // 게임 손익 합계 (정산용, 승패 모두 반영)
+  walletGains: number      // 게임 승리금 합계 (은행→지갑, 승리분만)
+  buddyNet: number         // 버디값 손익 합계 (지갑↔지갑)
+  baseDistribution: number // 기본금액 분배 (시작 지급액)
+  oecdPenalty: number      // OECD 페널티 합계 (지갑→은행)
+  wallet: number           // 내 보유 = baseDistribution + walletGains + buddyNet - oecdPenalty
+  net: number              // 정산용 = baseDistribution + gameAmount + buddyNet - oecdPenalty
   isOecd: boolean          // OECD 가입 여부
 }
 

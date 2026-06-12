@@ -1,5 +1,5 @@
 import {
-  doc, setDoc, onSnapshot, updateDoc, getDoc,
+  doc, setDoc, onSnapshot, updateDoc, getDoc, deleteField,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Room, HoleData, RoomConfig } from './types'
@@ -26,6 +26,12 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
       threshold: 60000,
       penaltyPerEvent: 10000,
       maxPerHole: 20000,
+    },
+    buddy: {
+      enabled: false,
+      baseDistribution: 0,
+      buddyValue: 0,
+      collectFromTeammates: false,
     },
   }
 
@@ -111,6 +117,33 @@ export async function saveHoleData(
 
 export async function setCurrentHole(roomId: string, hole: number): Promise<void> {
   await updateDoc(roomRef(roomId), { currentHole: hole })
+}
+
+export async function setPlayerOrder(roomId: string, order: string[]): Promise<void> {
+  await updateDoc(roomRef(roomId), { playerOrder: order })
+}
+
+export async function removePlayer(roomId: string, playerId: string, newOrder: string[]): Promise<void> {
+  await updateDoc(roomRef(roomId), {
+    [`players.${playerId}`]: deleteField(),
+    playerOrder: newOrder,
+  })
+}
+
+export async function savePlayerAmounts(roomId: string, amounts: Record<string, number>): Promise<void> {
+  const updates: Record<string, unknown> = {}
+  for (const [pid, amount] of Object.entries(amounts)) {
+    updates[`players.${pid}.initialAmount`] = amount
+  }
+  if (Object.keys(updates).length > 0) await updateDoc(roomRef(roomId), updates)
+}
+
+export async function setHusseinOverride(roomId: string, hole: number, playerId: string): Promise<void> {
+  await updateDoc(roomRef(roomId), { [`holes.${hole}.husseinPlayerId`]: playerId })
+}
+
+export async function setLasvegasTeamAOverride(roomId: string, hole: number, teamA: string[]): Promise<void> {
+  await updateDoc(roomRef(roomId), { [`holes.${hole}.lasvegasTeamA`]: teamA })
 }
 
 export async function finishGame(roomId: string): Promise<void> {

@@ -16,8 +16,9 @@ export default function Home() {
     setLoading(true); setError('')
     try {
       const { roomId, playerId } = await createRoom(name.trim())
-      localStorage.setItem('golf_room',   roomId)
-      localStorage.setItem('golf_player', playerId)
+      sessionStorage.setItem('golf_player', playerId)
+      localStorage.setItem('golf_room',             roomId)
+      localStorage.setItem(`golf_player_${roomId}`, playerId)
       router.push(`/setup/${roomId}`)
     } catch {
       setError('방 만들기 실패. 다시 시도해주세요.')
@@ -31,9 +32,11 @@ export default function Home() {
     try {
       const result = await joinRoom(roomCode.trim().toUpperCase(), name.trim())
       if ('error' in result) { setError(result.error); setLoading(false); return }
-      localStorage.setItem('golf_room',   roomCode.trim().toUpperCase())
-      localStorage.setItem('golf_player', result.playerId)
-      router.push(`/play/${roomCode.trim().toUpperCase()}`)
+      const cleanCode = roomCode.trim().toUpperCase()
+      sessionStorage.setItem('golf_player', result.playerId)
+      localStorage.setItem('golf_room',                cleanCode)
+      localStorage.setItem(`golf_player_${cleanCode}`, result.playerId)
+      router.push(`/play/${cleanCode}`)
     } catch {
       setError('참가 실패. 다시 시도해주세요.')
     } finally { setLoading(false) }
@@ -44,8 +47,15 @@ export default function Home() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* 헤더 */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>⛳</div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>모두의 골프게임</h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="24" r="23" stroke="var(--green)" strokeWidth="2"/>
+              <line x1="24" y1="10" x2="24" y2="40" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"/>
+              <polygon points="24,10 36,16 24,22" fill="var(--green)"/>
+              <ellipse cx="24" cy="40" rx="6" ry="2" fill="var(--green)" opacity=".3"/>
+            </svg>
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, letterSpacing: '-.3px' }}>모두의 골프게임</h1>
           <p style={{ color: 'var(--muted)', fontSize: 14 }}>실시간 골프 내기 자동 정산</p>
         </div>
 
@@ -60,7 +70,7 @@ export default function Home() {
                 color: tab === t ? '#fff' : 'var(--muted)',
                 transition: 'all .15s',
               }}>
-              {t === 'create' ? '🏌️ 방 만들기' : '🙋 방 참가하기'}
+              {t === 'create' ? '방 만들기' : '방 참가하기'}
             </button>
           ))}
         </div>
