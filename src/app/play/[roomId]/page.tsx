@@ -159,7 +159,7 @@ const GAME_TAG_STYLE: Record<string, string> = {
 function scoreButtons(par: number) {
   const row1 = [
     { label: 'ALBATROSS', value: par - 3, color: '#1e1b4b' },
-    { label: par === 3 ? '홀인원!' : 'EAGLE', value: par - 2, color: '#1e1b4b' },
+    { label: par === 3 ? 'HOLE-IN-ONE!' : 'EAGLE', value: par - 2, color: '#1e1b4b' },
     { label: 'BIRDIE',    value: par - 1, color: '#16a34a' },
     { label: 'PAR',       value: par,     color: '#16a34a' },
   ].filter(b => b.value > 0)
