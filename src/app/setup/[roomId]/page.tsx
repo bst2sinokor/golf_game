@@ -2,7 +2,7 @@
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts } from '@/lib/roomStore'
-import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig } from '@/lib/types'
+import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, EventConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 
@@ -24,7 +24,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const router = useRouter()
   const [room, setRoom]     = useState<Room | null>(null)
   const [myId, setMyId]     = useState('')
-  const [step, setStep]     = useState<'games' | 'pars' | 'money' | 'extras'>('games')
+  const [step, setStep]     = useState<'games' | 'pars' | 'money' | 'extras'>('pars')
 
   // 선택 게임
   const [selGames, setSelGames] = useState<Set<GameType>>(new Set())
@@ -46,6 +46,9 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [buddy, setBuddy] = useState<BuddyConfig>({
     enabled: false, baseDistribution: 0, buddyValue: 0, collectFromTeammates: false,
   })
+  // 니어·롱기스트
+  const [nearest, setNearest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
+  const [longest, setLongest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
   // 판돈 단위
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
   const [oecdSteps, setOecdSteps] = useState<Record<string, number>>({ threshold: 10000, penaltyPerEvent: 10000, maxPerHole: 10000 })
@@ -143,7 +146,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
       return cfg
     })
 
-    const config: RoomConfig = { holePars, games, oecd, buddy }
+    const config: RoomConfig = { holePars, games, oecd, buddy, nearest, longest }
 
     // 기본금액 업데이트
     for (const [pid, amount] of Object.entries(initAmounts)) {
@@ -206,7 +209,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
         <>
           {/* 스텝 탭 */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-            {(['games', 'pars', 'money', 'extras'] as const).map((s, i) => (
+            {(['pars', 'games', 'money', 'extras'] as const).map((s, i) => (
               <button key={s} onClick={() => setStep(s)} style={{
                 flex: 1, padding: '8px 4px', borderRadius: 8, cursor: 'pointer',
                 fontSize: 12, fontWeight: 600,
@@ -214,7 +217,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                 color: step === s ? '#fff' : 'var(--muted)',
                 border: '1px solid var(--border)',
               }}>
-                {['게임선택', '홀파설정', '판돈설정', '기타'][i]}
+                {['코스설정', '게임선택', '금액설정', '기타'][i]}
               </button>
             ))}
           </div>
@@ -302,8 +305,13 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                               background: sel ? 'var(--green)' : owner ? '#f1f5f9' : 'var(--border)',
                               color: sel ? '#fff' : owner ? '#cbd5e1' : 'var(--muted)',
                               opacity: owner ? 0.5 : 1,
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
                             }} title={owner ? `${GAME_LABELS[owner]}에 배정됨` : undefined}>
-                              {h}
+                              <span>{h}</span>
+                              {/* 파 표시: 파3 점, 파4 없음, 파5 - */}
+                              <span style={{ fontSize: 10, height: 8, lineHeight: '6px', fontWeight: 800 }}>
+                                {holePars[h - 1] === 3 ? '·' : holePars[h - 1] === 5 ? '-' : ' '}
+                              </span>
                             </button>
                           )
                         })}
@@ -589,6 +597,68 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                   </>
                 )}
               </div>
+
+              {/* 니어·롱기스트 설정 */}
+              {([
+                { key: 'nearest' as const, label: '니어리스트', cfg: nearest, setCfg: setNearest },
+                { key: 'longest' as const, label: '롱기스트',   cfg: longest, setCfg: setLongest },
+              ]).map(({ key, label, cfg, setCfg }) => (
+                <div key={key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontWeight: 700 }}>{label} 설정</p>
+                      <p style={{ fontSize: 12, color: 'var(--muted)' }}>당첨자가 설정 금액 획득 (진행자가 홀에서 선택)</p>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={cfg.enabled}
+                        onChange={e => setCfg(prev => ({ ...prev, enabled: e.target.checked }))} />
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>활성화</span>
+                    </label>
+                  </div>
+                  {cfg.enabled && (
+                    <>
+                      <div className="divider" />
+                      <div>
+                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>적용 홀</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
+                            const sel = cfg.holes.includes(h)
+                            return (
+                              <button key={h} onClick={() => setCfg(prev => ({
+                                ...prev,
+                                holes: prev.holes.includes(h) ? prev.holes.filter(x => x !== h) : [...prev.holes, h].sort((a, b) => a - b),
+                              }))} style={{
+                                width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
+                                fontWeight: 700, fontSize: 13,
+                                background: sel ? '#d97706' : 'var(--border)',
+                                color: sel ? '#fff' : 'var(--muted)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                              }}>
+                                <span>{h}</span>
+                                <span style={{ fontSize: 10, height: 8, lineHeight: '6px', fontWeight: 800 }}>
+                                  {holePars[h - 1] === 3 ? '·' : holePars[h - 1] === 5 ? '-' : ' '}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>당첨 금액 (원)</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <input type="text" inputMode="numeric"
+                            value={cfg.amount === 0 ? '' : cfg.amount.toLocaleString()}
+                            onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setCfg(prev => ({ ...prev, amount: raw === '' ? 0 : Number(raw) })) }}
+                            onFocus={e => e.target.select()}
+                            style={{ flex: 1, minWidth: 0 }} />
+                          <button onClick={() => setCfg(prev => ({ ...prev, amount: Math.max(0, prev.amount - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+                          <button onClick={() => setCfg(prev => ({ ...prev, amount: prev.amount + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
@@ -596,8 +666,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
             <div style={{ maxWidth: 480, margin: '0 auto' }}>
               {step !== 'extras' ? (
-                <button className="btn btn-blue" disabled={selGames.size === 0}
-                  onClick={() => setStep(step === 'games' ? 'pars' : step === 'pars' ? 'money' : 'extras')}>
+                <button className="btn btn-blue" disabled={step === 'games' && selGames.size === 0}
+                  onClick={() => setStep(step === 'pars' ? 'games' : step === 'games' ? 'money' : 'extras')}>
                   다음
                 </button>
               ) : (

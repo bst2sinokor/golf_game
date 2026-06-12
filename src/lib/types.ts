@@ -40,11 +40,19 @@ export interface BuddyConfig {
   collectFromTeammates?: boolean // 같은 팀에게도 버디값 받기 (기본 false: 해당 홀 팀 게임의 같은 팀원 제외)
 }
 
+export interface EventConfig {
+  enabled: boolean
+  holes: number[]          // 이벤트 적용 홀
+  amount: number           // 당첨 금액 (은행→지갑)
+}
+
 export interface RoomConfig {
   holePars: number[]       // 18개 홀 파 (인덱스 0 = 1홀)
   games: GameConfig[]
   oecd: OecdConfig
   buddy?: BuddyConfig
+  nearest?: EventConfig    // 니어리스트
+  longest?: EventConfig    // 롱기스트
 }
 
 export interface OecdEvents {
@@ -61,6 +69,8 @@ export interface HoleData {
   jootanwootan: Record<string, 'left' | 'right'>
   husseinPlayerId?: string     // 진행자 직접 지정 후세인
   lasvegasTeamA?: string[]     // 진행자 직접 지정 팀A (나머지가 팀B)
+  nearestWinner?: string       // 니어 당첨자 (player id 또는 'PASS')
+  longestWinner?: string       // 롱기스트 당첨자 (player id 또는 'PASS')
 }
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished'

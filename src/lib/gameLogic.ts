@@ -476,6 +476,7 @@ export function calcAllResults(room: Room): {
   sinperioTransfers: Settlement[]
   buddyResults: Record<number, { id: string; amount: number; label: string }[]>
   oecdResults: Record<number, { id: string; amount: number; detail: string }[]>
+  eventResults: Record<number, { label: string; id: string | null; amount: number }[]>
   settlements: Settlement[]
 } {
   const playerIds = Object.keys(room.players)
@@ -486,6 +487,7 @@ export function calcAllResults(room: Room): {
   const holeResults: Record<number, HoleGameResult[]> = {}
   const buddyResults: Record<number, { id: string; amount: number; label: string }[]> = {}
   const oecdResults: Record<number, { id: string; amount: number; detail: string }[]> = {}
+  const eventResults: Record<number, { label: string; id: string | null; amount: number }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
@@ -607,6 +609,22 @@ export function calcAllResults(room: Room): {
       }
     }
 
+    // 니어·롱기스트 (당첨금은 은행→지갑, PASS는 정산 없음)
+    const eventDefs = [
+      { cfg: room.config.nearest, winner: holeData.nearestWinner, label: '니어' },
+      { cfg: room.config.longest, winner: holeData.longestWinner, label: '롱기스트' },
+    ]
+    for (const { cfg: evCfg, winner, label } of eventDefs) {
+      if (!evCfg?.enabled || !evCfg.holes.includes(h) || !winner) continue
+      if (winner !== 'PASS' && playerIds.includes(winner)) {
+        walletGains[winner] += evCfg.amount
+        gameDeltas[winner]  += evCfg.amount
+        ;(eventResults[h] ??= []).push({ label, id: winner, amount: evCfg.amount })
+      } else {
+        ;(eventResults[h] ??= []).push({ label, id: null, amount: 0 })
+      }
+    }
+
     // OECD 페널티
     const oecdCfg = room.config.oecd
     if (oecdCfg.enabled) {
@@ -679,7 +697,7 @@ export function calcAllResults(room: Room): {
   // 최소 이체 정산
   const settlements = minimizeSettlements(playerTotals, room.players)
 
-  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, settlements }
+  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, eventResults, settlements }
 }
 
 // ─── 최소 이체 정산 알고리즘 ─────────────────────────────────────────────────

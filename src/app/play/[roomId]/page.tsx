@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride, setEventWinner } from '@/lib/roomStore'
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
@@ -292,12 +292,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const allEnteredSafe = !!room && !!myId &&
     Object.values(room.players).every(p => (room.holes[viewHole]?.scores ?? {})[p.id] != null)
 
+  // 니어·롱기 선택까지 끝났는지 (미설정 홀이면 true)
+  const eventsDoneSafe = !!room && [
+    { cfg: room.config.nearest, w: room.holes[viewHole]?.nearestWinner },
+    { cfg: room.config.longest, w: room.holes[viewHole]?.longestWinner },
+  ].every(e => !e.cfg?.enabled || !e.cfg.holes.includes(viewHole) || !!e.w)
+
   useEffect(() => {
-    if (isHost || !allEnteredSafe) return
+    if (isHost || !allEnteredSafe || !eventsDoneSafe) return
     if (popupShownRef.current.has(viewHole)) return
     popupShownRef.current.add(viewHole)
     setShowResultPopup(true)
-  }, [allEnteredSafe, viewHole, isHost])
+  }, [allEnteredSafe, eventsDoneSafe, viewHole, isHost])
 
   if (!room) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>로딩 중...</div>
   if (room.status === 'finished') { router.push(`/result/${roomId}`); return null }
@@ -320,6 +326,13 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
 
   const orderedIds     = orderedPlayerIds(room)
   const orderedPlayers = orderedIds.map(id => room.players[id]).filter(Boolean)
+
+  // ── 니어·롱기스트: 이번 홀에 활성화된 이벤트 / 미선택 이벤트 ──
+  const holeEvents = ([
+    { type: 'nearest' as const, label: '니어',     cfg: room.config.nearest, winner: room.holes[viewHole]?.nearestWinner },
+    { type: 'longest' as const, label: '롱기스트', cfg: room.config.longest, winner: room.holes[viewHole]?.longestWinner },
+  ]).filter(e => e.cfg?.enabled && e.cfg.holes.includes(viewHole))
+  const pendingEvents = holeEvents.filter(e => !e.winner)
 
   // ── 팀 매치플레이 누적 상황 (점수 합산 자동 판정, 홀별 UP 카운트) ──
   const teamMatchCfg = room.config.games.find(g => g.type === 'team-match')
@@ -673,7 +686,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         {renderScorecard('후반', 10)}
 
         {/* 이번 홀 게임 결과 — 진행자 전용 */}
-        {isHost && allEntered && (holeResults.filter(r => r.game !== 'sinperio').length > 0 || (results.buddyResults[viewHole]?.length ?? 0) > 0 || (results.oecdResults[viewHole]?.length ?? 0) > 0) && (
+        {isHost && allEntered && pendingEvents.length === 0 && (holeResults.filter(r => r.game !== 'sinperio').length > 0 || (results.buddyResults[viewHole]?.length ?? 0) > 0 || (results.oecdResults[viewHole]?.length ?? 0) > 0 || (results.eventResults[viewHole]?.length ?? 0) > 0) && (
           <div style={{
             marginBottom: 14, borderRadius: 12, overflow: 'hidden',
             border: '2px solid #2563eb',
@@ -697,13 +710,25 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 </div>
               ))}
               {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
-                <div style={{ padding: '8px 0', borderBottom: (results.oecdResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
+                <div style={{ padding: '8px 0', borderBottom: (results.oecdResults[viewHole]?.length ?? 0) > 0 || (results.eventResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3, letterSpacing: '.3px' }}>
                     버디값
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                     {results.buddyResults[viewHole].map(b =>
                       `${room.players[b.id]?.name ?? b.id} ${b.label}! +${b.amount.toLocaleString()}원`
+                    ).join(' · ')}
+                  </div>
+                </div>
+              )}
+              {(results.eventResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{ padding: '8px 0', borderBottom: (results.oecdResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', marginBottom: 3, letterSpacing: '.3px' }}>
+                    니어 · 롱기스트
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                    {results.eventResults[viewHole].map(e =>
+                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : `${e.label} PASS`
                     ).join(' · ')}
                   </div>
                 </div>
@@ -795,6 +820,38 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 )
               })}
             </div>
+
+            {/* 니어·롱기스트 당첨자 선택 — 진행자 전용 */}
+            {isHost && holeEvents.map(ev => (
+              <div key={ev.type} style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: '#d97706', display: 'block', marginBottom: 6 }}>
+                  {ev.label} ({(ev.cfg!.amount).toLocaleString()}원)
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  {orderedPlayers.map(p => {
+                    const sel = ev.winner === p.id
+                    return (
+                      <button key={p.id} onClick={() => setEventWinner(roomId, viewHole, ev.type, p.id)} style={{
+                        padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                        background: sel ? '#d97706' : 'var(--bg)',
+                        color: sel ? '#fff' : 'var(--muted)',
+                        border: sel ? 'none' : '1px solid var(--border)',
+                      }}>
+                        {p.name}
+                      </button>
+                    )
+                  })}
+                  <button onClick={() => setEventWinner(roomId, viewHole, ev.type, 'PASS')} style={{
+                    padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    background: ev.winner === 'PASS' ? '#64748b' : 'var(--bg)',
+                    color: ev.winner === 'PASS' ? '#fff' : 'var(--muted)',
+                    border: ev.winner === 'PASS' ? 'none' : '1px solid var(--border)',
+                  }}>
+                    PASS
+                  </button>
+                </div>
+              </div>
+            ))}
 
             {/* 좌탄우탄 방향 */}
             {hasJootanwootan(viewHole) && (
@@ -913,9 +970,10 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
           <div style={{ maxWidth: 480, margin: '0 auto' }}>
             <button className={`btn ${viewHole === 18 ? 'btn-red' : 'btn-green'}`}
-              onClick={handleNextHole} disabled={!allEntered}>
+              onClick={handleNextHole} disabled={!allEntered || pendingEvents.length > 0}>
               {viewHole === 18 ? '최종 정산' : `Hole ${viewHole + 1}로 이동`}
-              {!allEntered && ` (${players.length - Object.keys(holeScores).length}명 미입력)`}
+              {!allEntered ? ` (${players.length - Object.keys(holeScores).length}명 미입력)`
+                : pendingEvents.length > 0 ? ` (${pendingEvents.map(e => e.label).join('·')} 선택 필요)` : ''}
             </button>
           </div>
         </div>
@@ -967,11 +1025,24 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     </p>
                   </div>
                 ))
-              ) : (results.buddyResults[viewHole]?.length ?? 0) === 0 && (results.oecdResults[viewHole]?.length ?? 0) === 0 ? (
+              ) : (results.buddyResults[viewHole]?.length ?? 0) === 0 && (results.oecdResults[viewHole]?.length ?? 0) === 0 && (results.eventResults[viewHole]?.length ?? 0) === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 14, padding: '12px 0' }}>
                   이번 홀 게임 결과 없음
                 </p>
               ) : null}
+              {(results.eventResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 10, marginBottom: 8,
+                  background: '#fffbeb', border: '1px solid #fcd34d',
+                }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#d97706', marginBottom: 3 }}>니어 · 롱기스트</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+                    {results.eventResults[viewHole].map(e =>
+                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : `${e.label} PASS`
+                    ).join(' · ')}
+                  </p>
+                </div>
+              )}
               {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
                 <div style={{
                   padding: '10px 12px', borderRadius: 10, marginBottom: 8,

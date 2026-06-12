@@ -55,6 +55,8 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
       buddyValue: 0,
       collectFromTeammates: false,
     },
+    nearest: { enabled: false, holes: [], amount: 10000 },
+    longest: { enabled: false, holes: [], amount: 10000 },
   }
 
   const room: Room = {
@@ -165,6 +167,15 @@ export async function savePlayerAmounts(roomId: string, amounts: Record<string, 
     updates[`players.${pid}.initialAmount`] = amount
   }
   if (Object.keys(updates).length > 0) await updateDoc(roomRef(roomId), updates)
+}
+
+export async function setEventWinner(
+  roomId: string,
+  hole: number,
+  type: 'nearest' | 'longest',
+  winner: string,  // player id 또는 'PASS'
+): Promise<void> {
+  await updateDoc(roomRef(roomId), { [`holes.${hole}.${type}Winner`]: winner })
 }
 
 export async function setHusseinOverride(roomId: string, hole: number, playerId: string): Promise<void> {

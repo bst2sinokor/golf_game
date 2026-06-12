@@ -27,7 +27,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
   const players  = orderedPlayerIds(room).map(id => room.players[id]).filter(Boolean)
   const results  = calcAllResults(room)
-  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults } = results
+  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, eventResults } = results
 
   // 홀별 스코어표
   const holeSummary = Array.from({ length: 18 }, (_, i) => i + 1).map(h => ({
@@ -214,8 +214,9 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
           const hr = holeResults[h]
           const buddies = buddyResults[h] ?? []
           const penalties = oecdResults[h] ?? []
+          const events = eventResults[h] ?? []
           const relevantResults = (hr ?? []).filter(r => r.game !== 'sinperio')
-          if (relevantResults.length === 0 && buddies.length === 0 && penalties.length === 0) return null
+          if (relevantResults.length === 0 && buddies.length === 0 && penalties.length === 0 && events.length === 0) return null
           return (
             <div key={h} style={{ marginBottom: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 4 }}>{h}홀</p>
@@ -231,6 +232,13 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                   <span style={{ color: '#16a34a', fontWeight: 600 }}>버디값</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
                   {room.players[b.id]?.name ?? b.id} {b.label}! +{b.amount.toLocaleString()}원
+                </div>
+              ))}
+              {events.map((e, i) => (
+                <div key={`e${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
+                  <span style={{ color: '#d97706', fontWeight: 600 }}>{e.label}</span>
+                  <span style={{ color: 'var(--muted)' }}> · </span>
+                  {e.id ? `${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : 'PASS'}
                 </div>
               ))}
               {penalties.map((p, i) => (
