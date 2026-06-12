@@ -51,8 +51,6 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [longest, setLongest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
   // 판돈 단위
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
-  const [oecdSteps, setOecdSteps] = useState<Record<string, number>>({ threshold: 10000, penaltyPerEvent: 10000, maxPerHole: 10000 })
-  const [buddySteps, setBuddySteps] = useState<Record<string, number>>({ baseDistribution: 10000, buddyValue: 10000 })
   // 납부액 단위 및 완료 상태
   const [amountStep, setAmountStep] = useState(100000)
   const [amountConfirmed, setAmountConfirmed] = useState(false)
@@ -309,8 +307,9 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                             }} title={owner ? `${GAME_LABELS[owner]}에 배정됨` : undefined}>
                               <span>{h}</span>
                               {/* 파 표시: 파3 점, 파4 없음, 파5 - */}
-                              <span style={{ fontSize: 10, height: 8, lineHeight: '6px', fontWeight: 800 }}>
-                                {holePars[h - 1] === 3 ? '·' : holePars[h - 1] === 5 ? '-' : ' '}
+                              <span style={{ height: 6, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {holePars[h - 1] === 3 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />}
+                                {holePars[h - 1] === 5 && <span style={{ width: 14, height: 3, borderRadius: 2, background: 'currentColor' }} />}
                               </span>
                             </button>
                           )
@@ -368,17 +367,19 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>
                       {g === 'scratch' || g === 'sinperio' ? '타당 금액 (원)' : '홀당 금액 (원)'}
                     </label>
-                    {/* 단위 선택 */}
-                    <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
-                      {[{ v: 1000, l: '1천' }, { v: 5000, l: '5천' }, { v: 10000, l: '1만' }].map(({ v, l }) => (
-                        <button key={v} onClick={() => setBStep(v)} style={{
-                          flex: 1, padding: '6px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                          border: '1px solid var(--border)',
-                          background: bStep === v ? 'var(--blue)' : 'var(--bg)',
-                          color: bStep === v ? '#fff' : 'var(--muted)',
-                        }}>{l}</button>
-                      ))}
-                    </div>
+                    {/* 단위 선택 (스크래치·신페리오만: 타당 금액이라 소액 단위 필요) */}
+                    {(g === 'scratch' || g === 'sinperio') && (
+                      <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+                        {[{ v: 1000, l: '1천' }, { v: 5000, l: '5천' }, { v: 10000, l: '1만' }].map(({ v, l }) => (
+                          <button key={v} onClick={() => setBStep(v)} style={{
+                            flex: 1, padding: '6px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                            border: '1px solid var(--border)',
+                            background: bStep === v ? 'var(--blue)' : 'var(--bg)',
+                            color: bStep === v ? '#fff' : 'var(--muted)',
+                          }}>{l}</button>
+                        ))}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input type="text" inputMode="numeric"
                         value={val === 0 ? '' : val.toLocaleString()}
@@ -388,8 +389,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                         }}
                         onFocus={e => e.target.select()}
                         style={{ flex: 1, minWidth: 0 }} />
-                      <button onClick={() => setVal(val - bStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
-                      <button onClick={() => setVal(val + bStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                      <button onClick={() => setVal(val - (g === 'scratch' || g === 'sinperio' ? bStep : 5000))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+                      <button onClick={() => setVal(val + (g === 'scratch' || g === 'sinperio' ? bStep : 5000))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
                     </div>
                   </div>
                 )
@@ -490,29 +491,18 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                       { key: 'maxPerHole',      label: '홀당 페널티 상한 (원)' },
                     ].map(({ key, label }) => {
                       const val    = oecd[key as keyof OecdConfig] as number
-                      const oStep  = oecdSteps[key] ?? 1000
                       const setVal = (n: number) => setOecd(prev => ({ ...prev, [key]: Math.max(0, n) }))
                       return (
                         <div key={key}>
                           <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>{label}</label>
-                          <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
-                            {[{ v: 1000, l: '1천' }, { v: 5000, l: '5천' }, { v: 10000, l: '1만' }].map(({ v, l }) => (
-                              <button key={v} onClick={() => setOecdSteps(prev => ({ ...prev, [key]: v }))} style={{
-                                flex: 1, padding: '6px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                                border: '1px solid var(--border)',
-                                background: oStep === v ? 'var(--blue)' : 'var(--bg)',
-                                color: oStep === v ? '#fff' : 'var(--muted)',
-                              }}>{l}</button>
-                            ))}
-                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <input type="text" inputMode="numeric"
                               value={val === 0 ? '' : val.toLocaleString()}
                               onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setVal(raw === '' ? 0 : Number(raw)) }}
                               onFocus={e => e.target.select()}
                               style={{ flex: 1, minWidth: 0 }} />
-                            <button onClick={() => setVal(val - oStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
-                            <button onClick={() => setVal(val + oStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                            <button onClick={() => setVal(val - 5000)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+                            <button onClick={() => setVal(val + 5000)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
                           </div>
                         </div>
                       )
@@ -566,30 +556,19 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                       { key: 'buddyValue',        label: '버디값 (원/인)',         desc: '버디 달성 시 나머지 플레이어 각 인당 지급' },
                     ] as { key: keyof BuddyConfig; label: string; desc: string }[]).map(({ key, label, desc }) => {
                       const val    = buddy[key] as number
-                      const bStep  = buddySteps[key as string] ?? 10000
                       const setVal = (n: number) => setBuddy(prev => ({ ...prev, [key]: Math.max(0, n) }))
                       return (
                         <div key={key as string}>
                           <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 2 }}>{label}</label>
                           <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>{desc}</p>
-                          <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
-                            {[{ v: 1000, l: '1천' }, { v: 5000, l: '5천' }, { v: 10000, l: '1만' }].map(({ v, l }) => (
-                              <button key={v} onClick={() => setBuddySteps(prev => ({ ...prev, [key as string]: v }))} style={{
-                                flex: 1, padding: '6px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                                border: '1px solid var(--border)',
-                                background: bStep === v ? 'var(--blue)' : 'var(--bg)',
-                                color: bStep === v ? '#fff' : 'var(--muted)',
-                              }}>{l}</button>
-                            ))}
-                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <input type="text" inputMode="numeric"
                               value={val === 0 ? '' : val.toLocaleString()}
                               onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setVal(raw === '' ? 0 : Number(raw)) }}
                               onFocus={e => e.target.select()}
                               style={{ flex: 1, minWidth: 0 }} />
-                            <button onClick={() => setVal(val - bStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
-                            <button onClick={() => setVal(val + bStep)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                            <button onClick={() => setVal(val - 5000)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+                            <button onClick={() => setVal(val + 5000)} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
                           </div>
                         </div>
                       )
@@ -635,8 +614,9 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
                               }}>
                                 <span>{h}</span>
-                                <span style={{ fontSize: 10, height: 8, lineHeight: '6px', fontWeight: 800 }}>
-                                  {holePars[h - 1] === 3 ? '·' : holePars[h - 1] === 5 ? '-' : ' '}
+                                <span style={{ height: 6, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {holePars[h - 1] === 3 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />}
+                                  {holePars[h - 1] === 5 && <span style={{ width: 14, height: 3, borderRadius: 2, background: 'currentColor' }} />}
                                 </span>
                               </button>
                             )
