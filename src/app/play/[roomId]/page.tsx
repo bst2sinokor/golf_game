@@ -84,15 +84,10 @@ function relStr(score: number, par: number): string {
 function scoreColor(score: number | null | undefined, par: number): string {
   if (score == null) return '#e2e8f0'
   const d = score - par
-  if (d <= -3) return '#1e1b4b'
-  if (d === -2) return '#7c3aed'
-  if (d === -1) return '#16a34a'
-  if (d === 0)  return '#64748b'
-  if (d === 1)  return '#ca8a04'
-  if (d === 2)  return '#dc2626'
-  if (d === 3)  return '#991b1b'
-  if (d === 4)  return '#7f1d1d'
-  return '#450a0a'
+  if (d <= -2) return '#1e1b4b'  // 알바트로스·이글
+  if (d <= 0)  return '#16a34a'  // 버디·파
+  if (d <= 2)  return '#ca8a04'  // 보기·더블보기
+  return '#991b1b'               // 트리플 이상·더블파
 }
 
 // 플레이어 ID → 이름 치환
@@ -164,17 +159,17 @@ const GAME_TAG_STYLE: Record<string, string> = {
 function scoreButtons(par: number) {
   const row1 = [
     { label: 'ALBATROSS', value: par - 3, color: '#1e1b4b' },
-    { label: 'EAGLE',     value: par - 2, color: '#7c3aed' },
+    { label: 'EAGLE',     value: par - 2, color: '#1e1b4b' },
     { label: 'BIRDIE',    value: par - 1, color: '#16a34a' },
-    { label: 'PAR',       value: par,     color: '#64748b' },
+    { label: 'PAR',       value: par,     color: '#16a34a' },
   ].filter(b => b.value > 0)
 
   const row2 = [
     { label: 'BOGEY',  value: par + 1, color: '#ca8a04' },
-    { label: 'DOUBLE', value: par + 2, color: '#dc2626' },
+    { label: 'DOUBLE', value: par + 2, color: '#ca8a04' },
     ...(par >= 4 ? [{ label: 'TRIPLE', value: par + 3, color: '#991b1b' }] : []),
-    ...(par >= 5 ? [{ label: 'QUAD',   value: par + 4, color: '#7f1d1d' }] : []),
-    { label: 'D-PAR',  value: par * 2, color: '#450a0a' },
+    ...(par >= 5 ? [{ label: 'QUAD',   value: par + 4, color: '#991b1b' }] : []),
+    { label: 'DBL-PAR', value: par * 2, color: '#991b1b' },
   ]
   return { row1, row2 }
 }
