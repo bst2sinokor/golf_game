@@ -429,14 +429,15 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                           setEditPlayerId(p.id)
                         }
                       }}
-                      className={score != null && score - par <= -1 ? 'score-neon' : undefined}
                       style={{
                         padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800,
                         color: scoreColor(score, par),
                         background: isActiveCell ? 'rgba(37,99,235,.18)' : h === viewHole ? 'rgba(37,99,235,.05)' : 'transparent',
                         cursor: isHost ? 'pointer' : 'default',
                       }}>
-                        {score != null ? relStr(score, par) : '—'}
+                        <span className={score != null && score - par <= -1 ? 'score-neon' : undefined}>
+                          {score != null ? relStr(score, par) : '—'}
+                        </span>
                       </td>
                     )
                   })}
