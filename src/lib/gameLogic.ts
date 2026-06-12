@@ -564,15 +564,20 @@ export function calcAllResults(room: Room): {
         const holeTeams = fromTeammates ? [] : getHoleTeams(room, h)
         const isTeammate = (a: string, b: string) =>
           holeTeams.some(t => t.includes(a) && t.includes(b))
+        // 현재 지갑 잔액 (지갑은 마이너스 불가 — 잔액 한도 내에서만 지급)
+        const walletOf = (pid: string) =>
+          baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         const holeGains: Record<string, number> = {}
-        for (const maker of makers) {
-          holeGains[maker] = 0
-          for (const pid of playerIds) {
-            if (makers.includes(pid)) continue  // 버디한 사람끼리는 주고받지 않음
+        for (const maker of makers) holeGains[maker] = 0
+        for (const pid of playerIds) {
+          if (makers.includes(pid)) continue  // 버디한 사람끼리는 주고받지 않음
+          for (const maker of makers) {
             if (!fromTeammates && isTeammate(maker, pid)) continue  // 같은 팀 제외
-            buddyDeltas[maker] += bVal
-            buddyDeltas[pid]   -= bVal
-            holeGains[maker]   += bVal
+            const pay = Math.min(bVal, Math.max(0, walletOf(pid)))  // 잔액 부족 시 있는 만큼만
+            if (pay <= 0) continue
+            buddyDeltas[pid]   -= pay
+            buddyDeltas[maker] += pay
+            holeGains[maker]   += pay
           }
         }
         buddyResults[h] = makers.map(m => ({ id: m, amount: holeGains[m] ?? 0 }))
