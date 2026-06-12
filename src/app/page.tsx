@@ -78,7 +78,7 @@ export default function Home() {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {tab === 'join' && (
             <div>
-              <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>방 코드</label>
+              <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>방 코드</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -86,12 +86,12 @@ export default function Home() {
                 value={roomCode}
                 onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                 maxLength={4}
-                style={{ letterSpacing: 4, fontSize: 22, textAlign: 'center', fontWeight: 700 }}
+                style={{ letterSpacing: 2, textAlign: 'center', fontWeight: 700 }}
               />
             </div>
           )}
           <div>
-            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>
               {tab === 'create' ? '진행자 이름' : '내 이름'}
             </label>
             <input
