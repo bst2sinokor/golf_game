@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { saveConfig, savePlayerAmounts, removePlayer, setPlayerOrder } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, EventConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
+import { GAME_DETAIL } from '@/lib/gameInfo'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 
 const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
@@ -13,7 +14,7 @@ const GAME_DESC: Record<GameType, string> = {
   jootanwootan: '티샷 방향(좌/우)으로 매 홀 팀 구성',
   hussein:      '직전 홀 2등 vs 1·3·4등 대결',
   lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
-  sinperio:     '18홀 완료 후 핸디캡 넷스코어 타수 차 정산',
+  sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
 }
 
@@ -77,6 +78,8 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   )
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // 게임 상세 설명 팝업
+  const [detailGame, setDetailGame] = useState<GameType | null>(null)
 
   // ── 헬퍼 ──
   function getHoleOwner(hole: number, excludeGame: GameType): GameType | null {
@@ -177,6 +180,26 @@ export default function GameSettings({ room, roomId, myId }: Props) {
 
   return (
     <div>
+      {/* 게임 상세 설명 팝업 */}
+      {detailGame && (
+        <div onClick={() => setDetailGame(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(15,23,42,.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 16, padding: '20px 18px',
+            width: '100%', maxWidth: 360, maxHeight: '80vh', overflowY: 'auto',
+            boxShadow: '0 8px 32px rgba(0,0,0,.25)',
+          }}>
+            <p style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>{GAME_LABELS[detailGame]}</p>
+            <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, whiteSpace: 'pre-line', marginBottom: 16 }}>
+              {GAME_DETAIL[detailGame]}
+            </p>
+            <button className="btn btn-blue" onClick={() => setDetailGame(null)}>닫기</button>
+          </div>
+        </div>
+      )}
+
       {/* 스텝 탭 */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
         {(Object.keys(STEP_LABELS) as SettingsStep[]).map(s => (
@@ -247,13 +270,34 @@ export default function GameSettings({ room, roomId, myId }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {ALL_GAMES.map(g => (
             <div key={g}>
+              {/* 신페리오: 추가 옵션으로 분리 */}
+              {g === 'sinperio' && (
+                <div style={{ margin: '14px 0 2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.8px', color: 'var(--muted)' }}>ADDITIONAL OPTION</span>
+                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
+                    위 게임들과 중복으로 함께 진행되는 옵션입니다
+                  </p>
+                </div>
+              )}
               <div className="card" onClick={() => toggleGame(g)} style={{
                 cursor: 'pointer',
                 border: selGames.has(g) ? '2px solid var(--green)' : '1px solid var(--border)',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <p style={{ fontWeight: 700, marginBottom: 2 }}>{GAME_LABELS[g]}</p>
+                    <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
+                      {GAME_LABELS[g]}
+                      <button onClick={e => { e.stopPropagation(); setDetailGame(g) }} style={{
+                        width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--muted)',
+                        background: 'transparent', color: 'var(--muted)', cursor: 'pointer',
+                        fontSize: 11, fontWeight: 800, lineHeight: 1, padding: 0,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>?</button>
+                    </p>
                     <p style={{ fontSize: 12, color: 'var(--muted)' }}>{GAME_DESC[g]}</p>
                   </div>
                   <div style={{
