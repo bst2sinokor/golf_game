@@ -259,14 +259,16 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                     background: 'var(--bg)', fontSize: 14, fontWeight: 700, cursor: pi === orderedPlayers.length - 1 ? 'default' : 'pointer',
                     color: pi === orderedPlayers.length - 1 ? '#cbd5e1' : 'var(--blue)',
                   }}>▼</button>
-                  {p.id !== myId && (
+                  {p.id !== myId ? (
                     <button onClick={e => { e.stopPropagation(); handleRemove(p.id) }} style={{
-                      padding: '4px 10px', borderRadius: 6, border: '1px solid #fca5a5',
+                      width: 48, height: 32, borderRadius: 6, border: '1px solid #fca5a5',
                       background: '#fef2f2', color: '#dc2626', fontSize: 12,
-                      fontWeight: 600, cursor: 'pointer', height: 32,
+                      fontWeight: 600, cursor: 'pointer',
                     }}>
                       삭제
                     </button>
+                  ) : (
+                    <span style={{ width: 48, height: 32, flexShrink: 0 }} />
                   )}
                 </div>
               </div>
