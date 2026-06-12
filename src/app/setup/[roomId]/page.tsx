@@ -18,7 +18,7 @@ const GAME_DESC: Record<GameType, string> = {
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
 }
 
-const DEFAULT_PAR = Array(18).fill(4)  // 기본: 전 홀 파4
+const DEFAULT_PAR = Array(18).fill(0)  // 0 = 미선택 (확정 시 프리셋 또는 파4로 채움)
 
 export default function SetupPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
@@ -415,7 +415,9 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           {step === 'pars' && (
             <div className="card">
               <p style={{ fontWeight: 700, marginBottom: 12 }}>
-                홀별 파 설정 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>(총 파: {holePars.reduce((s,p) => s+p, 0)})</span>
+                홀별 파 설정 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
+                  (총 파: {holePars.every(p => p >= 3) ? holePars.reduce((s,p) => s+p, 0) : '-'})
+                </span>
               </p>
 
               {/* 저장된 코스 원터치 칩 */}
@@ -790,7 +792,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
             <div style={{ maxWidth: 480, margin: '0 auto' }}>
               {step !== 'extras' ? (
-                <button className="btn btn-blue" disabled={step === 'games' && selGames.size === 0}
+                <button className="btn btn-blue"
+                  disabled={(step === 'pars' && !holePars.every(p => p >= 3)) || (step === 'games' && selGames.size === 0)}
                   onClick={() => {
                     if (step === 'pars' && club.trim() && frontCourse.trim() && backCourse.trim()) {
                       // 전반/후반 코스별 홀파 프리셋 + 조합(칩) 저장 (다음 라운드부터 원터치 적용)
@@ -808,8 +811,10 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                   다음
                 </button>
               ) : (
-                <button className="btn btn-green" onClick={handleStart} disabled={selGames.size === 0}>
+                <button className="btn btn-green" onClick={handleStart}
+                  disabled={selGames.size === 0 || !holePars.every(p => p >= 3)}>
                   게임 시작 ({selGames.size}개 게임 선택됨)
+                  {!holePars.every(p => p >= 3) && ' — 코스설정 필요'}
                 </button>
               )}
             </div>
