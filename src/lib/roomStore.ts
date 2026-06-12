@@ -10,7 +10,7 @@ function roomRef(roomId: string) {
 }
 
 function generateRoomId(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const chars = '0123456789'
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 

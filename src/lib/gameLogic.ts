@@ -39,12 +39,11 @@ function calcStroke(
     }
   }
   const [winner] = ranks[0]
-  const others = Object.keys(scores).filter(id => id !== winner)
   return {
     game: 'stroke', winners: [winner],
     loserPays,
     carry: false, carryTotal: 0,
-    detail: `${winner} 승 (인당 ${loserPays.toLocaleString()}원, 총 +${(loserPays * others.length).toLocaleString()}원)`,
+    detail: `${winner} 승 (+${loserPays.toLocaleString()}원)`,
   }
 }
 
@@ -496,7 +495,10 @@ export function calcAllResults(room: Room): {
           carryMap[cfg.type] = 0
           const losers = playerIds.filter(id => !result!.winners.includes(id))
           for (const wid of result.winners) {
-            const gain = result.loserPays * losers.length / result.winners.length
+            // 스트로크: 승자는 홀당 설정금액(+이월)만 수령. 그 외 게임: 패자 수 비례 수령
+            const gain = cfg.type === 'stroke'
+              ? result.loserPays / result.winners.length
+              : result.loserPays * losers.length / result.winners.length
             gameDeltas[wid] += gain
             walletGains[wid] += gain  // 승리금은 은행에서 지갑으로
           }

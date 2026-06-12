@@ -567,7 +567,11 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={buddy.enabled}
-                  onChange={e => setBuddy(prev => ({ ...prev, enabled: e.target.checked }))} />
+                  onChange={e => setBuddy(prev => ({
+                    ...prev, enabled: e.target.checked,
+                    baseDistribution: e.target.checked && !prev.baseDistribution ? 10000 : prev.baseDistribution,
+                    buddyValue: e.target.checked && !prev.buddyValue ? 10000 : prev.buddyValue,
+                  }))} />
                 <span style={{ fontSize: 14, fontWeight: 600 }}>활성화</span>
               </label>
             </div>

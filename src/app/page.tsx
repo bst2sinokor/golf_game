@@ -81,11 +81,12 @@ export default function Home() {
               <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>방 코드</label>
               <input
                 type="text"
-                placeholder="예: AB3K"
+                inputMode="numeric"
+                placeholder="예: 1234"
                 value={roomCode}
-                onChange={e => setCode(e.target.value.toUpperCase())}
+                onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                 maxLength={4}
-                style={{ textTransform: 'uppercase', letterSpacing: 4, fontSize: 22, textAlign: 'center', fontWeight: 700 }}
+                style={{ letterSpacing: 4, fontSize: 22, textAlign: 'center', fontWeight: 700 }}
               />
             </div>
           )}
