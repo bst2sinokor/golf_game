@@ -37,12 +37,124 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   const results  = calcAllResults(room)
   const { playerTotals, holeResults, sinperioDeltas, sinperioNetScores, sinperioGross, sinperioHandicaps, sinperioTransfers, buddyResults, oecdResults, eventResults } = results
 
-  // 홀별 스코어표
-  const holeSummary = Array.from({ length: 18 }, (_, i) => i + 1).map(h => ({
-    h,
-    par: room.config.holePars[h - 1] ?? 4,
-    scores: players.map(p => room.holes[h]?.scores?.[p.id] ?? '-'),
-  }))
+  // ── 스코어보드 (플레이 화면과 동일 형식, 조회 전용) ──
+  const relStr = (score: number, par: number) => {
+    const d = score - par
+    return d === 0 ? '0' : d > 0 ? `+${d}` : `${d}`
+  }
+  const teamMatchCfg = room.config.games.find(g => g.type === 'team-match')
+  const matchStatusByHole: Record<number, number> = {}
+  let matchOverallDiff = 0
+  if (teamMatchCfg) {
+    const t1 = teamMatchCfg.teams?.team1 ?? []
+    const t2 = teamMatchCfg.teams?.team2 ?? []
+    let diff = 0
+    if (t1.length > 0 && t2.length > 0) {
+      for (const h of [...teamMatchCfg.holes].sort((a, b) => a - b)) {
+        const sc = room.holes[h]?.scores
+        if (!sc || ![...t1, ...t2].every(id => sc[id] != null)) continue
+        const s1 = t1.reduce((s, id) => s + sc[id], 0)
+        const s2 = t2.reduce((s, id) => s + sc[id], 0)
+        if (s1 < s2) diff += 1
+        else if (s2 < s1) diff -= 1
+        matchStatusByHole[h] = diff
+      }
+    }
+    matchOverallDiff = diff
+  }
+  const matchCellText  = (d: number) => d === 0 ? 'T' : `${Math.abs(d)}UP`
+  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#16a34a' : '#0f172a'
+
+  const renderScorecard = (label: string, startHole: number) => {
+    const holes  = Array.from({ length: 9 }, (_, i) => startHole + i)
+    const parSum = holes.reduce((s, h) => s + (room.config.holePars[h - 1] ?? 4), 0)
+    return (
+      <div key={label} className="card" style={{ marginBottom: 10, padding: 0, overflow: 'hidden' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '18%' }} />
+            {holes.map(h => <col key={h} style={{ width: '7.6%' }} />)}
+            <col style={{ width: '9%' }} />
+          </colgroup>
+          <thead>
+            <tr style={{ background: '#14532d' }}>
+              <th style={{ padding: '7px 6px', textAlign: 'left', fontSize: 10, color: '#86efac', fontWeight: 700 }}>{label}</th>
+              {holes.map(h => (
+                <th key={h} style={{ padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800, color: '#d1fae5' }}>{h}</th>
+              ))}
+              <th style={{ padding: '7px 4px', textAlign: 'center', fontSize: 10, color: '#86efac', fontWeight: 700 }}>T</th>
+            </tr>
+            <tr style={{ background: '#166534' }}>
+              <td style={{ padding: '4px 6px', fontSize: 10, fontWeight: 700, color: '#bbf7d0' }}>PAR</td>
+              {holes.map(h => (
+                <td key={h} style={{ padding: '4px 2px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#d1fae5' }}>
+                  {room.config.holePars[h - 1] ?? 4}
+                </td>
+              ))}
+              <td style={{ padding: '4px 4px', textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#bbf7d0' }}>{parSum}</td>
+            </tr>
+            {teamMatchCfg && holes.every(h => teamMatchCfg.holes.includes(h)) && (
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '4px 6px', fontSize: 10, fontWeight: 700, color: 'var(--muted)' }}>Match</td>
+                {holes.map(h => {
+                  const d = matchStatusByHole[h]
+                  return (
+                    <td key={h} style={{
+                      padding: '4px 1px', textAlign: 'center', fontSize: 9, fontWeight: 800,
+                      color: d !== undefined ? matchCellColor(d) : 'transparent',
+                    }}>
+                      {d !== undefined ? matchCellText(d) : ''}
+                    </td>
+                  )
+                })}
+                <td style={{ padding: '4px 2px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: matchCellColor(matchOverallDiff) }}>
+                  {Object.keys(matchStatusByHole).length > 0 ? matchCellText(matchOverallDiff) : ''}
+                </td>
+              </tr>
+            )}
+          </thead>
+          <tbody>
+            {players.map((p, pi) => {
+              const rowScores = holes.map(h => room.holes[h]?.scores?.[p.id] ?? null)
+              const entered   = rowScores.filter((s): s is number => s != null)
+              const rowTotal  = entered.reduce((a, b) => a + b, 0)
+              const isMe      = p.id === myId
+              return (
+                <tr key={p.id} style={{
+                  background: isMe ? '#eff6ff' : pi % 2 === 0 ? '#fff' : '#f8fafc',
+                  borderTop: '1px solid #f1f5f9',
+                }}>
+                  <td style={{ padding: '4px 4px 4px 6px', fontSize: 11, fontWeight: isMe ? 800 : 600, color: 'var(--text)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                      {playerTotals[p.id]?.isOecd && (
+                        <span style={{ fontSize: 9, color: '#dc2626', flexShrink: 0 }}>●</span>
+                      )}
+                    </div>
+                  </td>
+                  {holes.map((h, idx) => {
+                    const score = rowScores[idx]
+                    const par   = room.config.holePars[h - 1] ?? 4
+                    return (
+                      <td key={h} style={{ padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800, color: score == null ? '#e2e8f0' : scoreColor(score - par) }}>
+                        {score == null ? '—'
+                          : score - par <= -2 ? <span className="score-badge badge-violet">{relStr(score, par)}</span>
+                          : score - par === -1 ? <span className="score-badge badge-green">{relStr(score, par)}</span>
+                          : relStr(score, par)}
+                      </td>
+                    )
+                  })}
+                  <td style={{ padding: '7px 4px', textAlign: 'center', fontSize: 12, fontWeight: 800, color: 'var(--text)', borderLeft: '1px solid #e2e8f0' }}>
+                    {entered.length > 0 ? rowTotal : '—'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
@@ -134,62 +246,10 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         </div>
       )}
 
-      {/* 홀별 스코어 */}
-      <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <p style={{ fontWeight: 700, marginBottom: 10 }}>홀별 스코어</p>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', color: 'var(--muted)', padding: '4px 6px' }}>홀</th>
-              <th style={{ color: 'var(--muted)', padding: '4px 6px' }}>파</th>
-              {players.map(p => (
-                <th key={p.id} style={{ color: 'var(--muted)', padding: '4px 6px' }}>{p.name}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {holeSummary.map(({ h, par, scores }) => {
-              const minScore = scores.filter((s): s is number => typeof s === 'number').reduce((m, s) => Math.min(m, s), 99)
-              return (
-                <tr key={h} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '6px', fontWeight: 700 }}>{h}</td>
-                  <td style={{ textAlign: 'center', padding: '6px', color: 'var(--muted)' }}>{par}</td>
-                  {scores.map((s, i) => {
-                    const diff = typeof s === 'number' ? s - par : null
-                    const isMin = typeof s === 'number' && s === minScore
-                    return (
-                      <td key={i} style={{
-                        textAlign: 'center', padding: '6px', fontWeight: isMin ? 800 : 600,
-                        color: diff === null ? 'var(--muted)' : scoreColor(diff),
-                      }}>{s}</td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
-            <tr style={{ borderTop: '2px solid var(--border)', background: 'rgba(255,255,255,.03)' }}>
-              <td style={{ padding: '8px 6px', fontWeight: 800 }}>합계</td>
-              <td style={{ textAlign: 'center', padding: '8px 6px', color: 'var(--muted)' }}>
-                {room.config.holePars.reduce((s, p) => s + p, 0)}
-              </td>
-              {players.map(p => {
-                const total = Array.from({ length: 18 }, (_, i) => i + 1)
-                  .reduce((s, h) => s + (room.holes[h]?.scores?.[p.id] ?? 0), 0)
-                const coursePar = room.config.holePars.reduce((s, par) => s + par, 0)
-                const diff = total - coursePar
-                return (
-                  <td key={p.id} style={{
-                    textAlign: 'center', padding: '8px 6px', fontWeight: 800,
-                    color: diff < 0 ? '#4ade80' : diff === 0 ? 'var(--text)' : '#f87171',
-                  }}>
-                    {total} ({diff >= 0 ? '+' : ''}{diff})
-                  </td>
-                )
-              })}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {/* 스코어보드 */}
+      {renderScorecard('전반', 1)}
+      {renderScorecard('후반', 10)}
+      <div style={{ marginBottom: 16 }} />
 
       {/* 홀별 게임 결과 요약 */}
       <div className="card" style={{ marginBottom: 16 }}>

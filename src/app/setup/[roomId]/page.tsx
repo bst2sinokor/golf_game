@@ -94,7 +94,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   // 해당 홀이 다른 게임에 이미 배정됐는지 확인
   function getHoleOwner(hole: number, excludeGame: GameType): GameType | null {
     for (const g of Array.from(selGames)) {
-      if (g === excludeGame) continue
+      if (g === excludeGame || g === 'sinperio') continue
       if ((gameHoles[g] ?? []).includes(hole)) return g
     }
     return null
@@ -135,7 +135,9 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     const games: GameConfig[] = Array.from(selGames).map(type => {
       const cfg: GameConfig = {
         type,
-        holes: gameHoles[type] ?? Array.from({ length: 18 }, (_, i) => i + 1),
+        holes: type === 'sinperio'
+          ? Array.from({ length: 18 }, (_, i) => i + 1)
+          : gameHoles[type] ?? Array.from({ length: 18 }, (_, i) => i + 1),
       }
       if (type === 'scratch')   cfg.betPerStroke = gameBets[type] ?? 1000
       else if (type === 'sinperio') cfg.totalBet  = gameBets[type] ?? 1000
@@ -262,8 +264,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     </div>
                   )}
 
-                  {/* 적용 홀 선택 */}
-                  {selGames.has(g) && (
+                  {/* 적용 홀 선택 (신페리오는 전체 홀 고정) */}
+                  {selGames.has(g) && g !== 'sinperio' && (
                     <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <p style={{ fontSize: 13, color: 'var(--muted)' }}>적용 홀</p>
