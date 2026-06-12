@@ -244,8 +244,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                       <div style={{ display: 'flex', gap: 8 }}>
                         {(['team1', 'team2'] as const).map((t, i) => (
                           <div key={t} style={{ flex: 1, padding: 10, borderRadius: 8, background: 'var(--card)', border: '1px solid var(--border)' }}>
-                            <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, marginBottom: 6, color: i === 0 ? '#2563eb' : '#dc2626' }}>
-                              <span style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#2563eb' : '#dc2626', flexShrink: 0 }} />
+                            <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, marginBottom: 6, color: i === 0 ? '#2563eb' : '#16a34a' }}>
+                              <span style={{ width: 10, height: 10, borderRadius: 2, background: i === 0 ? '#2563eb' : '#16a34a', flexShrink: 0 }} />
                               팀
                             </p>
                             {players.map(p => (

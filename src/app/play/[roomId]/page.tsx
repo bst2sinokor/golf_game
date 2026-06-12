@@ -327,7 +327,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     matchOverallDiff = diff
   }
   const matchCellText  = (d: number) => d === 0 ? 'T' : `${Math.abs(d)}UP`
-  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#dc2626' : '#0f172a'
+  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#16a34a' : '#0f172a'
 
   // 현재 편집 대상의 기존 점수
   const targetScore = holeScores[targetId]
@@ -383,9 +383,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <td style={{ padding: '4px 6px' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb' }} />
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: '#2563eb' }} />
                     <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700 }}>/</span>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626' }} />
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: '#16a34a' }} />
                   </span>
                 </td>
                 {holes.map(h => {
@@ -571,16 +571,14 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 5,
                           minWidth: 0, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap',
-                          fontSize: 13, fontWeight: 700, color: 'var(--text)',
+                          fontSize: 13, fontWeight: 700,
                         }}>
-                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#2563eb', flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {(g.teams?.team1 ?? []).map(id => room.players[id]?.name ?? '').join('+')}
+                          <span style={{ color: '#2563eb', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {(g.teams?.team1 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                           <span style={{ color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>vs</span>
-                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#dc2626', flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {(g.teams?.team2 ?? []).map(id => room.players[id]?.name ?? '').join('+')}
+                          <span style={{ color: '#16a34a', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {(g.teams?.team2 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                         </span>
                       ) : (
