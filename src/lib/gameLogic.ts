@@ -47,28 +47,32 @@ function calcStroke(
   }
 }
 
-// ─── 팀 매치플레이 (진행자가 입력한 홀 결과 기준) ───────────────────────────
+// ─── 팀 매치플레이 (팀 합산 타수 자동 판정) ──────────────────────────────────
 
 function calcTeamMatch(
-  result: 'blue' | 'red' | 'tie' | undefined,
+  scores: Record<string, number>,
   cfg: GameConfig,
   prevCarry: number,
 ): HoleGameResult | null {
-  if (!result) return null  // 진행자 미입력
   const team1 = cfg.teams?.team1 ?? []
   const team2 = cfg.teams?.team2 ?? []
+  if (team1.length === 0 || team2.length === 0) return null
+  // 양 팀 전원 점수 입력 전에는 판정 보류
+  if (![...team1, ...team2].every(id => scores[id] != null)) return null
+  const t1sum = team1.reduce((s, id) => s + scores[id], 0)
+  const t2sum = team2.reduce((s, id) => s + scores[id], 0)
   const loserPays = (cfg.betPerHole ?? 0) + prevCarry
 
-  if (result === 'tie') {
+  if (t1sum === t2sum) {
     return {
       game: 'team-match', winners: [], loserPays: 0,
       carry: true, carryTotal: loserPays,
       detail: `무승부 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
     }
   }
-  const winTeam  = result === 'blue' ? team1 : team2
-  const loseTeam = result === 'blue' ? team2 : team1
-  const winName  = result === 'blue' ? '블루팀' : '레드팀'
+  const winTeam  = t1sum < t2sum ? team1 : team2
+  const loseTeam = t1sum < t2sum ? team2 : team1
+  const winName  = t1sum < t2sum ? '블루팀' : '레드팀'
   const perWinner = Math.floor(loserPays * loseTeam.length / winTeam.length)
   return {
     game: 'team-match', winners: winTeam,
@@ -484,7 +488,7 @@ export function calcAllResults(room: Room): {
       if (cfg.type === 'stroke') {
         result = calcStroke(h, scores, cfg, prevCarry)
       } else if (cfg.type === 'team-match') {
-        result = calcTeamMatch(holeData.teamMatch, cfg, prevCarry)
+        result = calcTeamMatch(scores, cfg, prevCarry)
       } else if (cfg.type === 'jootanwootan') {
         result = calcJootanwootan(scores, holeData.jootanwootan ?? {}, cfg, prevCarry)
       } else if (cfg.type === 'hussein') {

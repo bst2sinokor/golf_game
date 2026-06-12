@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride, setTeamMatchResult } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride } from '@/lib/roomStore'
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
@@ -250,18 +250,24 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     : allIds
   const orderedPlayers = orderedIds.map(id => room.players[id]).filter(Boolean)
 
-  // ── 팀 매치플레이 누적 상황 (홀별 UP 카운트) ──
+  // ── 팀 매치플레이 누적 상황 (점수 합산 자동 판정, 홀별 UP 카운트) ──
   const teamMatchCfg = room.config.games.find(g => g.type === 'team-match')
   const matchStatusByHole: Record<number, number> = {}  // 홀 → 누적 diff (블루 양수, 레드 음수)
   let matchOverallDiff = 0
   if (teamMatchCfg) {
+    const t1 = teamMatchCfg.teams?.team1 ?? []
+    const t2 = teamMatchCfg.teams?.team2 ?? []
     let diff = 0
-    for (const h of [...teamMatchCfg.holes].sort((a, b) => a - b)) {
-      const r = room.holes[h]?.teamMatch
-      if (!r) continue
-      if (r === 'blue') diff += 1
-      else if (r === 'red') diff -= 1
-      matchStatusByHole[h] = diff
+    if (t1.length > 0 && t2.length > 0) {
+      for (const h of [...teamMatchCfg.holes].sort((a, b) => a - b)) {
+        const sc = room.holes[h]?.scores
+        if (!sc || ![...t1, ...t2].every(id => sc[id] != null)) continue
+        const s1 = t1.reduce((s, id) => s + sc[id], 0)
+        const s2 = t2.reduce((s, id) => s + sc[id], 0)
+        if (s1 < s2) diff += 1
+        else if (s2 < s1) diff -= 1
+        matchStatusByHole[h] = diff
+      }
     }
     matchOverallDiff = diff
   }
@@ -317,7 +323,8 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 {parSum}
               </td>
             </tr>
-            {teamMatchCfg && holes.some(h => teamMatchCfg.holes.includes(h)) && (
+            {/* 매치 상황 줄: 이 카드의 9개 홀이 모두 팀매치 적용 홀일 때만 표시 */}
+            {teamMatchCfg && holes.every(h => teamMatchCfg.holes.includes(h)) && (
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <td style={{ padding: '4px 6px' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
@@ -667,34 +674,6 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 )
               })}
             </div>
-
-            {/* 팀 매치플레이 홀 결과 — 진행자 전용 */}
-            {isHost && teamMatchCfg && teamMatchCfg.holes.includes(viewHole) && (
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>팀 매치 홀 결과</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {([
-                    { v: 'blue' as const, label: '팀 UP', dot: '#2563eb', bg: 'var(--blue)' },
-                    { v: 'red' as const,  label: '팀 UP', dot: '#dc2626', bg: 'var(--red)' },
-                    { v: 'tie' as const,  label: 'TIE',   dot: null,      bg: '#475569' },
-                  ]).map(({ v, label, dot, bg }) => {
-                    const sel = room.holes[viewHole]?.teamMatch === v
-                    return (
-                      <button key={v} onClick={() => setTeamMatchResult(roomId, viewHole, v)} style={{
-                        flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer',
-                        fontWeight: 700, fontSize: 14,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                        background: sel ? bg : 'var(--bg)',
-                        color: sel ? '#fff' : 'var(--muted)',
-                      }}>
-                        {dot && <span style={{ width: 9, height: 9, borderRadius: '50%', background: sel ? '#fff' : dot, flexShrink: 0 }} />}
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* 좌탄우탄 방향 */}
             {hasJootanwootan(viewHole) && (

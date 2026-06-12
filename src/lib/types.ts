@@ -61,7 +61,6 @@ export interface HoleData {
   jootanwootan: Record<string, 'left' | 'right'>
   husseinPlayerId?: string     // 진행자 직접 지정 후세인
   lasvegasTeamA?: string[]     // 진행자 직접 지정 팀A (나머지가 팀B)
-  teamMatch?: 'blue' | 'red' | 'tie'  // 팀 매치플레이 홀 결과 (진행자 입력)
 }
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished'
