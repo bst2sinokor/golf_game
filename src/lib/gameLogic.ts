@@ -446,6 +446,7 @@ export function calcAllResults(room: Room): {
   sinperioDeltas: Record<string, number>
   sinperioNetScores: Record<string, number>
   sinperioTransfers: Settlement[]
+  buddyResults: Record<number, { id: string; amount: number }[]>
   settlements: Settlement[]
 } {
   const playerIds = Object.keys(room.players)
@@ -454,6 +455,7 @@ export function calcAllResults(room: Room): {
   const buddyDeltas: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const oecdPenalties: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const holeResults: Record<number, HoleGameResult[]> = {}
+  const buddyResults: Record<number, { id: string; amount: number }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
@@ -537,14 +539,18 @@ export function calcAllResults(room: Room): {
         const holeTeams = fromTeammates ? [] : getHoleTeams(room, h)
         const isTeammate = (a: string, b: string) =>
           holeTeams.some(t => t.includes(a) && t.includes(b))
+        const holeGains: Record<string, number> = {}
         for (const maker of makers) {
+          holeGains[maker] = 0
           for (const pid of playerIds) {
             if (makers.includes(pid)) continue  // 버디한 사람끼리는 주고받지 않음
             if (!fromTeammates && isTeammate(maker, pid)) continue  // 같은 팀 제외
             buddyDeltas[maker] += bVal
             buddyDeltas[pid]   -= bVal
+            holeGains[maker]   += bVal
           }
         }
+        buddyResults[h] = makers.map(m => ({ id: m, amount: holeGains[m] ?? 0 }))
       }
     }
 
@@ -618,7 +624,7 @@ export function calcAllResults(room: Room): {
   // 최소 이체 정산
   const settlements = minimizeSettlements(playerTotals, room.players)
 
-  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, settlements }
+  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, settlements }
 }
 
 // ─── 최소 이체 정산 알고리즘 ─────────────────────────────────────────────────

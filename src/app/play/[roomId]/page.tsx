@@ -490,7 +490,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         {renderScorecard('후반', 10)}
 
         {/* 이번 홀 게임 결과 — 진행자 전용 */}
-        {isHost && allEntered && holeResults.filter(r => r.game !== 'sinperio').length > 0 && (
+        {isHost && allEntered && (holeResults.filter(r => r.game !== 'sinperio').length > 0 || (results.buddyResults[viewHole]?.length ?? 0) > 0) && (
           <div style={{
             marginBottom: 14, borderRadius: 12, overflow: 'hidden',
             border: '2px solid #2563eb',
@@ -500,10 +500,10 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               <span style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '.3px' }}>Hole {viewHole} 결과</span>
             </div>
             <div style={{ background: '#fff', padding: '10px 14px' }}>
-              {holeResults.filter(r => r.game !== 'sinperio').map((r, i) => (
+              {holeResults.filter(r => r.game !== 'sinperio').map((r, i, arr) => (
                 <div key={i} style={{
                   padding: '8px 0',
-                  borderBottom: i < holeResults.filter(r2 => r2.game !== 'sinperio').length - 1 ? '1px solid #f1f5f9' : 'none',
+                  borderBottom: i < arr.length - 1 || (results.buddyResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none',
                 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, letterSpacing: '.3px' }}>
                     {GAME_LABELS[r.game]}
@@ -513,6 +513,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   </div>
                 </div>
               ))}
+              {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3, letterSpacing: '.3px' }}>
+                    버디
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                    {results.buddyResults[viewHole].map(b =>
+                      `${room.players[b.id]?.name ?? b.id} 버디! +${b.amount.toLocaleString()}원`
+                    ).join(' · ')}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
