@@ -313,6 +313,28 @@ function calcLasvegas(
   }
 }
 
+// ─── 스크레치 ────────────────────────────────────────────────────────────────
+
+function calcScratch(
+  scores: Record<string, number>,
+  cfg: GameConfig,
+): Record<string, number> {
+  const bet = cfg.betPerStroke ?? 0
+  const deltas: Record<string, number> = {}
+  const ids = Object.keys(scores)
+  for (const id of ids) deltas[id] = 0
+
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i], b = ids[j]
+      const diff = (scores[b] - scores[a]) * bet  // 양수면 a가 유리
+      deltas[a] += diff
+      deltas[b] -= diff
+    }
+  }
+  return deltas
+}
+
 // ─── 신페리오 핸디캡 ─────────────────────────────────────────────────────────
 
 export function selectSinperioHoles(holePars: number[]): number[] {
@@ -515,27 +537,13 @@ export function calcAllResults(room: Room): {
       }
     }
 
-    // 스크레치 (홀별 누적, 지갑↔지갑 — 잔액 한도 내에서만 지급)
+    // 스크레치 (홀별 누적)
     const scratchCfg = room.config.games.find(g => g.type === 'scratch' && g.holes.includes(h))
     if (scratchCfg && Object.keys(scores).length > 0) {
-      const bet = scratchCfg.betPerStroke ?? 0
-      const ids = Object.keys(scores)
-      const walletOf = (pid: string) =>
-        baseDistribution + (walletGains[pid] ?? 0) + (buddyDeltas[pid] ?? 0) - (oecdPenalties[pid] ?? 0)
-      for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-          const a = ids[i], b = ids[j]
-          const diff = (scores[b] - scores[a]) * bet  // 양수면 b가 a에게 지급
-          if (diff === 0) continue
-          const payer = diff > 0 ? b : a
-          const payee = diff > 0 ? a : b
-          const pay = Math.min(Math.abs(diff), Math.max(0, walletOf(payer)))  // 잔액 부족 시 있는 만큼만
-          if (pay <= 0) continue
-          walletGains[payer] = (walletGains[payer] ?? 0) - pay
-          walletGains[payee] = (walletGains[payee] ?? 0) + pay
-          gameDeltas[payer]  = (gameDeltas[payer] ?? 0) - pay
-          gameDeltas[payee]  = (gameDeltas[payee] ?? 0) + pay
-        }
+      const deltas = calcScratch(scores, scratchCfg)
+      for (const [id, d] of Object.entries(deltas)) {
+        gameDeltas[id] = (gameDeltas[id] ?? 0) + d
+        walletGains[id] = (walletGains[id] ?? 0) + d  // 스크레치는 지갑↔지갑 (손익 모두 반영)
       }
       results.push({
         game: 'scratch', winners: [], loserPays: 0,
