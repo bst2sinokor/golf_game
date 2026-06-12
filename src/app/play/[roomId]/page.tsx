@@ -327,7 +327,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     matchOverallDiff = diff
   }
   const matchCellText  = (d: number) => d === 0 ? 'T' : `${Math.abs(d)}UP`
-  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#ea580c' : '#0f172a'
+  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#0f172a' : '#0f172a'
 
   // 현재 편집 대상의 기존 점수
   const targetScore = holeScores[targetId]
@@ -573,7 +573,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                             {(g.teams?.team1 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                           <span style={{ color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>vs</span>
-                          <span style={{ color: '#ea580c', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {(g.teams?.team2 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                         </span>
