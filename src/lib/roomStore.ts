@@ -1,5 +1,6 @@
 import {
   doc, setDoc, onSnapshot, updateDoc, getDoc, deleteField,
+  collection, query, where, getDocs, deleteDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Room, HoleData, RoomConfig } from './types'
@@ -14,8 +15,29 @@ function generateRoomId(): string {
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
+// 생성된 지 7일 지난 방 자동 삭제
+async function cleanupOldRooms(): Promise<void> {
+  try {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const q = query(collection(db, 'rooms'), where('createdAt', '<', cutoff))
+    const snap = await getDocs(q)
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
+  } catch { /* 정리 실패는 방 생성에 영향 없음 */ }
+}
+
 export async function createRoom(hostName: string): Promise<{ roomId: string; playerId: string }> {
-  const roomId   = generateRoomId()
+  void cleanupOldRooms()  // 백그라운드 정리 (대기하지 않음)
+
+  // 코드 충돌 방지: 기존 방과 겹치지 않는 코드가 나올 때까지 재시도
+  let roomId = generateRoomId()
+  let ok = false
+  for (let i = 0; i < 10; i++) {
+    const snap = await getDoc(roomRef(roomId))
+    if (!snap.exists()) { ok = true; break }
+    roomId = generateRoomId()
+  }
+  if (!ok) throw new Error('방 코드 생성 실패')
+
   const playerId = 'host-' + Date.now()
 
   const defaultConfig: RoomConfig = {
