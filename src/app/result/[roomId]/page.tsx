@@ -6,6 +6,13 @@ import type { Room } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { calcAllResults, orderedPlayerIds } from '@/lib/gameLogic'
 
+// 결과 문구의 플레이어 ID → 이름 치환
+function resolveNames(detail: string, players: Room['players']): string {
+  let s = detail
+  for (const [id, p] of Object.entries(players)) s = s.split(id).join(p.name)
+  return s
+}
+
 // 스코어보드와 동일한 4그룹 색상
 function scoreColor(diff: number): string {
   if (diff <= -2) return '#1e1b4b'  // 알바트로스·이글
@@ -166,7 +173,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
       {/* 최종 손익: 납부금 제외, 보유(지갑) + 신페리오 정산 합산 */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <p style={{ fontWeight: 700, marginBottom: 12, fontSize: 16 }}>인원별 최종 손익</p>
+        <p style={{ fontWeight: 700, marginBottom: 12, fontSize: 16 }}>최종 손익</p>
         {players
           .sort((a, b) =>
             ((playerTotals[b.id]?.wallet ?? 0) + (sinperioDeltas[b.id] ?? 0))
@@ -268,7 +275,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <div key={i} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3, whiteSpace: 'pre-line' }}>
                   <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{GAME_LABELS[r.game]}</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
-                  {r.detail}
+                  {resolveNames(r.detail, room.players)}
                 </div>
               ))}
               {buddies.map((b, i) => (
