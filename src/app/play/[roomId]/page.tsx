@@ -352,8 +352,8 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px' }}>
 
       {/* ── 헤더 ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ marginBottom: 4 }}>
             {room.status === 'playing' ? (
               <span style={{
@@ -447,7 +447,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
             })}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 14, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
           {isHost && (
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>총납부금</p>
