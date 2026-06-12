@@ -21,6 +21,24 @@ function rankPlayers(scores: Record<string, number>): string[][] {
   return ranks
 }
 
+// ─── 플레이어 표시 순서 (모든 기기 동일 보장) ───────────────────────────────
+
+export function orderedPlayerIds(room: Room): string[] {
+  const allIds = Object.keys(room.players)
+  if (room.playerOrder) {
+    const filtered = room.playerOrder.filter(id => room.players[id])
+    if (filtered.length === allIds.length) return filtered
+  }
+  // 기본 순서: 진행자 먼저, 이후 참가 시각(id 타임스탬프) 순 — 클라이언트 무관 결정적
+  const ts = (id: string) => Number(id.split('-')[1] ?? 0)
+  return [...allIds].sort((a, b) => {
+    const ha = a.startsWith('host-') ? 0 : 1
+    const hb = b.startsWith('host-') ? 0 : 1
+    if (ha !== hb) return ha - hb
+    return ts(a) - ts(b)
+  })
+}
+
 // ─── 스트로크 (개인전, 홀별 판돈 누적) ─────────────────────────────────────
 
 function calcStroke(

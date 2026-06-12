@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
+import { orderedPlayerIds } from '@/lib/gameLogic'
 
 const ALL_GAMES: GameType[] = ['stroke', 'team-match', 'jootanwootan', 'hussein', 'lasvegas', 'sinperio', 'scratch']
 const GAME_DESC: Record<GameType, string> = {
@@ -157,7 +158,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   if (!room) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>로딩 중...</div>
 
   const isHost = room.hostPlayerId === myId
-  const players = Object.values(room.players)
+  const players = orderedPlayerIds(room).map(id => room.players[id]).filter(Boolean)
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 80px' }}>

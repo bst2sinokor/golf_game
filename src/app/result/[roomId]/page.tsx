@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { subscribeRoom } from '@/lib/roomStore'
 import type { Room } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
-import { calcAllResults } from '@/lib/gameLogic'
+import { calcAllResults, orderedPlayerIds } from '@/lib/gameLogic'
 
 export default function ResultPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
@@ -25,7 +25,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   if (!room) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>로딩 중...</div>
   if (room.status === 'playing') { router.push(`/play/${roomId}`); return null }
 
-  const players  = Object.values(room.players)
+  const players  = orderedPlayerIds(room).map(id => room.players[id]).filter(Boolean)
   const results  = calcAllResults(room)
   const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults } = results
 

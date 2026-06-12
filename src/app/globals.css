@@ -75,3 +75,8 @@ input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgb
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: .4; transform: scale(.7); }
 }
+
+@keyframes waitBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .35; }
+}

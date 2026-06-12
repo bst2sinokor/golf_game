@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { saveConfig, savePlayerAmounts, removePlayer, setPlayerOrder } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
+import { orderedPlayerIds } from '@/lib/gameLogic'
 
 const ALL_GAMES: GameType[] = ['stroke', 'team-match', 'jootanwootan', 'hussein', 'lasvegas', 'sinperio', 'scratch']
 
@@ -25,11 +26,8 @@ interface Props {
 type SettingsStep = 'players' | 'games' | 'pars' | 'money' | 'oecd'
 
 export default function GameSettings({ room, roomId, myId }: Props) {
-  // ── 플레이어 순서 (playerOrder 기반) ──
-  const allIds = Object.keys(room.players)
-  const orderedIds = (room.playerOrder && room.playerOrder.length === allIds.length)
-    ? room.playerOrder.filter(id => room.players[id])
-    : allIds
+  // ── 플레이어 순서 (playerOrder 기반, 기본 순서는 전 기기 동일) ──
+  const orderedIds = orderedPlayerIds(room)
   const orderedPlayers = orderedIds.map(id => room.players[id]).filter(Boolean)
 
   // ── 설정 상태 (room.config 초기값) ──

@@ -5,7 +5,7 @@ import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finis
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
-import { calcAllResults, findFullRanking } from '@/lib/gameLogic'
+import { calcAllResults, findFullRanking, orderedPlayerIds } from '@/lib/gameLogic'
 
 const EMPTY_OECD: OecdEvents = { ob: 0, hazard: 0, bunker: 0, threePutt: false, tripleOrWorse: false }
 
@@ -302,10 +302,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const bankBalance  = totalPaid + Object.values(results.playerTotals).reduce(
     (s, t) => s - t.walletGains - t.baseDistribution + t.oecdPenalty, 0)
 
-  const allIds      = Object.keys(room.players)
-  const orderedIds  = (room.playerOrder && room.playerOrder.length === allIds.length)
-    ? room.playerOrder.filter(id => room.players[id])
-    : allIds
+  const orderedIds     = orderedPlayerIds(room)
   const orderedPlayers = orderedIds.map(id => room.players[id]).filter(Boolean)
 
   // ── 팀 매치플레이 누적 상황 (점수 합산 자동 판정, 홀별 UP 카운트) ──
@@ -523,6 +520,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 fontSize: 11, fontWeight: 800, letterSpacing: '.5px',
                 color: '#fff', background: '#3b82f6',
                 borderRadius: 4, padding: '2px 7px',
+                animation: 'waitBlink 1.4s ease-in-out infinite',
               }}>
                 WAIT
               </span>
@@ -569,7 +567,25 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                       whiteSpace: 'nowrap', overflow: 'hidden',
                     }}>{GAME_LABELS[g.type]}</span>
                     {td && !td.unresolved && (
-                      <FitText text={td.text} color="var(--text)" fontWeight={700} />
+                      g.type === 'team-match' ? (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          minWidth: 0, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap',
+                          fontSize: 13, fontWeight: 700, color: 'var(--text)',
+                        }}>
+                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#2563eb', flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {(g.teams?.team1 ?? []).map(id => room.players[id]?.name ?? '').join('+')}
+                          </span>
+                          <span style={{ color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>vs</span>
+                          <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#dc2626', flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {(g.teams?.team2 ?? []).map(id => room.players[id]?.name ?? '').join('+')}
+                          </span>
+                        </span>
+                      ) : (
+                        <FitText text={td.text} color="var(--text)" fontWeight={700} />
+                      )
                     )}
                     {td?.unresolved && (
                       <span style={{ fontSize: 13, color: '#dc2626', fontWeight: 700, whiteSpace: 'nowrap' }}>미정</span>
