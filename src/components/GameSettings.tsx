@@ -157,6 +157,16 @@ export default function GameSettings({ room, roomId, myId }: Props) {
     await removePlayer(roomId, playerId, newOrder)
   }
 
+  function movePlayer(playerId: string, dir: -1 | 1) {
+    const ids = orderedPlayers.map(p => p.id)
+    const idx = ids.indexOf(playerId)
+    const to = idx + dir
+    if (to < 0 || to >= ids.length) return
+    const next = [...ids]
+    ;[next[idx], next[to]] = [next[to], next[idx]]
+    setPlayerOrder(roomId, next)
+  }
+
   function handleOrderDrop() {
     if (!draggingId) return
     const ids = orderedPlayers.map(p => p.id)
@@ -198,8 +208,8 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       {step === 'players' && (
         <div className="card">
           <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>플레이어 관리</p>
-          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>⠿ 핸들을 드래그하여 순서 변경</p>
-          {orderedPlayers.map(p => (
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>▲▼ 버튼으로 순서 변경</p>
+          {orderedPlayers.map((p, pi) => (
             <div key={p.id}>
               {/* 삽입 위치 바 */}
               {draggingId && draggingId !== p.id && dragInsertBeforeId === p.id && (
@@ -238,15 +248,27 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                     <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700 }}>나 (진행자)</span>
                   )}
                 </div>
-                {p.id !== myId && (
-                  <button onClick={e => { e.stopPropagation(); handleRemove(p.id) }} style={{
-                    padding: '4px 10px', borderRadius: 6, border: '1px solid #fca5a5',
-                    background: '#fef2f2', color: '#dc2626', fontSize: 12,
-                    fontWeight: 600, cursor: 'pointer',
-                  }}>
-                    삭제
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button onClick={e => { e.stopPropagation(); movePlayer(p.id, -1) }} disabled={pi === 0} style={{
+                    width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border)',
+                    background: 'var(--bg)', fontSize: 14, fontWeight: 700, cursor: pi === 0 ? 'default' : 'pointer',
+                    color: pi === 0 ? '#cbd5e1' : 'var(--blue)',
+                  }}>▲</button>
+                  <button onClick={e => { e.stopPropagation(); movePlayer(p.id, 1) }} disabled={pi === orderedPlayers.length - 1} style={{
+                    width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border)',
+                    background: 'var(--bg)', fontSize: 14, fontWeight: 700, cursor: pi === orderedPlayers.length - 1 ? 'default' : 'pointer',
+                    color: pi === orderedPlayers.length - 1 ? '#cbd5e1' : 'var(--blue)',
+                  }}>▼</button>
+                  {p.id !== myId && (
+                    <button onClick={e => { e.stopPropagation(); handleRemove(p.id) }} style={{
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid #fca5a5',
+                      background: '#fef2f2', color: '#dc2626', fontSize: 12,
+                      fontWeight: 600, cursor: 'pointer', height: 32,
+                    }}>
+                      삭제
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
