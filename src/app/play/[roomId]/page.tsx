@@ -822,36 +822,40 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
             </div>
 
             {/* 니어·롱기스트 당첨자 선택 — 진행자 전용 */}
-            {isHost && holeEvents.map(ev => (
-              <div key={ev.type} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: '#d97706', display: 'block', marginBottom: 6 }}>
-                  {ev.label} ({(ev.cfg!.amount).toLocaleString()}원)
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {orderedPlayers.map(p => {
-                    const sel = ev.winner === p.id
-                    return (
-                      <button key={p.id} onClick={() => setEventWinner(roomId, viewHole, ev.type, p.id)} style={{
+            {isHost && holeEvents.length > 0 && (
+              <div style={{ marginBottom: 12, padding: 12, background: '#fffbeb', borderRadius: 8, border: '1px solid #fcd34d' }}>
+                {holeEvents.map((ev, i) => (
+                  <div key={ev.type} style={{ marginBottom: i < holeEvents.length - 1 ? 12 : 0 }}>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: '#d97706', display: 'block', marginBottom: 6 }}>
+                      {ev.label}
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {orderedPlayers.map(p => {
+                        const sel = ev.winner === p.id
+                        return (
+                          <button key={p.id} onClick={() => setEventWinner(roomId, viewHole, ev.type, p.id)} style={{
+                            padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                            background: sel ? '#d97706' : '#fff',
+                            color: sel ? '#fff' : 'var(--muted)',
+                            border: sel ? 'none' : '1px solid var(--border)',
+                          }}>
+                            {p.name}
+                          </button>
+                        )
+                      })}
+                      <button onClick={() => setEventWinner(roomId, viewHole, ev.type, 'PASS')} style={{
                         padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                        background: sel ? '#d97706' : 'var(--bg)',
-                        color: sel ? '#fff' : 'var(--muted)',
-                        border: sel ? 'none' : '1px solid var(--border)',
+                        background: ev.winner === 'PASS' ? '#64748b' : '#fff',
+                        color: ev.winner === 'PASS' ? '#fff' : 'var(--muted)',
+                        border: ev.winner === 'PASS' ? 'none' : '1px solid var(--border)',
                       }}>
-                        {p.name}
+                        PASS
                       </button>
-                    )
-                  })}
-                  <button onClick={() => setEventWinner(roomId, viewHole, ev.type, 'PASS')} style={{
-                    padding: '6px 12px', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    background: ev.winner === 'PASS' ? '#64748b' : 'var(--bg)',
-                    color: ev.winner === 'PASS' ? '#fff' : 'var(--muted)',
-                    border: ev.winner === 'PASS' ? 'none' : '1px solid var(--border)',
-                  }}>
-                    PASS
-                  </button>
-                </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
             {/* 좌탄우탄 방향 */}
             {hasJootanwootan(viewHole) && (
