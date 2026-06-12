@@ -192,7 +192,12 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
       return cfg
     })
 
-    const config: RoomConfig = { holePars, games, oecd, buddy, nearest, longest }
+    const config: RoomConfig = {
+      holePars, games, oecd, buddy, nearest, longest,
+      ...(club.trim() && frontCourse.trim() && backCourse.trim()
+        ? { courseNames: { club: club.trim(), front: frontCourse.trim(), back: backCourse.trim() } }
+        : {}),
+    }
 
     // 기본금액 업데이트
     for (const [pid, amount] of Object.entries(initAmounts)) {
@@ -415,9 +420,12 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           {step === 'pars' && (
             <div className="card">
               <p style={{ fontWeight: 700, marginBottom: 12 }}>
-                홀별 파 설정 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
-                  (총 파: {holePars.every(p => p >= 3) ? holePars.reduce((s,p) => s+p, 0) : '-'})
-                </span>
+                홀별 파 설정
+                {holePars.every(p => p >= 3) && (
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
+                    {' '}(총 파: {holePars.reduce((s,p) => s+p, 0)}타)
+                  </span>
+                )}
               </p>
 
               {/* 저장된 코스 원터치 칩 */}
@@ -468,11 +476,11 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                   {courseMsg}
                 </p>
               )}
-              <div style={{ marginBottom: 8 }} />
+              <div style={{ marginBottom: 20 }} />
 
               {[
-                courseConfirmed ? `전반 (${frontCourse.trim()})` : '전반 (1~9홀)',
-                courseConfirmed ? `후반 (${backCourse.trim()})` : '후반 (10~18홀)',
+                courseConfirmed ? `전반 (${frontCourse.trim()})` : '전반',
+                courseConfirmed ? `후반 (${backCourse.trim()})` : '후반',
               ].map((label, half) => (
                 <div key={half} style={{ marginBottom: 16 }}>
                   <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{label}</p>

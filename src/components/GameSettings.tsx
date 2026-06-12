@@ -147,7 +147,10 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       if (type === 'team-match')    cfg.teams         = teams
       return cfg
     })
-    const config: RoomConfig = { holePars, games, oecd, buddy, nearest, longest }
+    const config: RoomConfig = {
+      holePars, games, oecd, buddy, nearest, longest,
+      ...(room.config.courseNames ? { courseNames: room.config.courseNames } : {}),
+    }
     await Promise.all([
       saveConfig(roomId, config),
       savePlayerAmounts(roomId, initAmounts),
@@ -396,9 +399,15 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       {/* ③ 홀 파 설정 */}
       {step === 'pars' && (
         <div className="card">
-          <p style={{ fontWeight: 700, marginBottom: 4 }}>홀별 파 설정</p>
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>총 파: {holePars.reduce((s, p) => s + p, 0)}</p>
-          {['전반 (1~9홀)', '후반 (10~18홀)'].map((label, half) => (
+          <p style={{ fontWeight: 700, marginBottom: 12 }}>
+            홀별 파 설정 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>
+              (총 파: {holePars.reduce((s, p) => s + p, 0)}타)
+            </span>
+          </p>
+          {[
+            room.config.courseNames ? `전반 (${room.config.courseNames.front})` : '전반 (1~9홀)',
+            room.config.courseNames ? `후반 (${room.config.courseNames.back})` : '후반 (10~18홀)',
+          ].map((label, half) => (
             <div key={half} style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{label}</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4 }}>

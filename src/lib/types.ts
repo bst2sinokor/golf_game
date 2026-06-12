@@ -53,6 +53,7 @@ export interface RoomConfig {
   buddy?: BuddyConfig
   nearest?: EventConfig    // 니어리스트
   longest?: EventConfig    // 롱기스트
+  courseNames?: { club: string; front: string; back: string }  // 골프장·전반/후반 코스명
 }
 
 export interface OecdEvents {
