@@ -553,23 +553,25 @@ export function calcAllResults(room: Room): {
         gameDeltas[id] = (gameDeltas[id] ?? 0) + d
         walletGains[id] = (walletGains[id] ?? 0) + d  // 스크레치는 지갑↔지갑 (손익 모두 반영)
       }
-      // 쌍별 이체 내역 (누가 누구에게 얼마)
-      const bet = scratchCfg.betPerStroke ?? 0
+      // 순이익 기준 최소 이체로 정리 (중간 경유 없이 직접 지급)
       const ids = Object.keys(scores)
       const pname = (id: string) => room.players[id]?.name ?? id
+      const debtors   = ids.filter(id => deltas[id] < 0).map(id => ({ id, amt: -deltas[id] })).sort((a, b) => b.amt - a.amt)
+      const creditors = ids.filter(id => deltas[id] > 0).map(id => ({ id, amt:  deltas[id] })).sort((a, b) => b.amt - a.amt)
       const transfers: string[] = []
-      for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-          const a = ids[i], b = ids[j]
-          const diff = (scores[b] - scores[a]) * bet  // 양수면 b가 a에게 지급
-          if (diff > 0)      transfers.push(`${pname(b)} → ${pname(a)} ${diff.toLocaleString()}원`)
-          else if (diff < 0) transfers.push(`${pname(a)} → ${pname(b)} ${(-diff).toLocaleString()}원`)
-        }
+      let di = 0, ci = 0
+      while (di < debtors.length && ci < creditors.length) {
+        const pay = Math.min(debtors[di].amt, creditors[ci].amt)
+        transfers.push(`${pname(debtors[di].id)} → ${pname(creditors[ci].id)} ${pay.toLocaleString()}원`)
+        debtors[di].amt   -= pay
+        creditors[ci].amt -= pay
+        if (debtors[di].amt === 0) di++
+        if (creditors[ci].amt === 0) ci++
       }
       results.push({
         game: 'scratch', winners: [], loserPays: 0,
         carry: false, carryTotal: 0,
-        detail: transfers.length > 0 ? transfers.join(' · ') : '전원 동타 (정산 없음)',
+        detail: transfers.length > 0 ? transfers.join('\n') : '전원 동타 (정산 없음)',
       })
     }
 

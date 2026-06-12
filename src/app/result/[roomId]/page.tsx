@@ -221,7 +221,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
             <div key={h} style={{ marginBottom: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 4 }}>{h}홀</p>
               {relevantResults.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
+                <div key={i} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3, whiteSpace: 'pre-line' }}>
                   <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{GAME_LABELS[r.game]}</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
                   {r.detail}

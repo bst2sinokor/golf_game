@@ -704,7 +704,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, letterSpacing: '.3px' }}>
                     {GAME_LABELS[r.game]}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'pre-line' }}>
                     {resolveNames(r.detail, room.players)}
                   </div>
                 </div>
@@ -1020,7 +1020,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3 }}>
                       {GAME_LABELS[r.game]}
                     </p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
                       {resolveNames(r.detail, room.players)}
                     </p>
                   </div>
