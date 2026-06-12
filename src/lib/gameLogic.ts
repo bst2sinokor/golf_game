@@ -47,34 +47,34 @@ function calcStroke(
   }
 }
 
-// ─── 팀 매치플레이 ───────────────────────────────────────────────────────────
+// ─── 팀 매치플레이 (진행자가 입력한 홀 결과 기준) ───────────────────────────
 
 function calcTeamMatch(
-  scores: Record<string, number>,
+  result: 'blue' | 'red' | 'tie' | undefined,
   cfg: GameConfig,
   prevCarry: number,
-): HoleGameResult {
+): HoleGameResult | null {
+  if (!result) return null  // 진행자 미입력
   const team1 = cfg.teams?.team1 ?? []
   const team2 = cfg.teams?.team2 ?? []
-  const t1sum = team1.reduce((s, id) => s + (scores[id] ?? 0), 0)
-  const t2sum = team2.reduce((s, id) => s + (scores[id] ?? 0), 0)
   const loserPays = (cfg.betPerHole ?? 0) + prevCarry
 
-  if (t1sum === t2sum) {
+  if (result === 'tie') {
     return {
       game: 'team-match', winners: [], loserPays: 0,
       carry: true, carryTotal: loserPays,
-      detail: `동점 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
+      detail: `무승부 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
     }
   }
-  const winTeam  = t1sum < t2sum ? team1 : team2
-  const loseTeam = t1sum < t2sum ? team2 : team1
+  const winTeam  = result === 'blue' ? team1 : team2
+  const loseTeam = result === 'blue' ? team2 : team1
+  const winName  = result === 'blue' ? '블루팀' : '레드팀'
   const perWinner = Math.floor(loserPays * loseTeam.length / winTeam.length)
   return {
     game: 'team-match', winners: winTeam,
     loserPays,
     carry: false, carryTotal: 0,
-    detail: `${winTeam.join('+')} 팀 승 (1인당 +${perWinner.toLocaleString()}원)`,
+    detail: `${winName} 승 (1인당 +${perWinner.toLocaleString()}원)`,
   }
 }
 
@@ -461,6 +461,7 @@ export function calcAllResults(room: Room): {
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
+  const baseDistribution = (buddyCfg?.enabled ? (buddyCfg.baseDistribution ?? 0) : 0)
 
   // 게임별 이월 추적
   const carryMap: Record<string, number> = {}
@@ -483,7 +484,7 @@ export function calcAllResults(room: Room): {
       if (cfg.type === 'stroke') {
         result = calcStroke(h, scores, cfg, prevCarry)
       } else if (cfg.type === 'team-match') {
-        result = calcTeamMatch(scores, cfg, prevCarry)
+        result = calcTeamMatch(holeData.teamMatch, cfg, prevCarry)
       } else if (cfg.type === 'jootanwootan') {
         result = calcJootanwootan(scores, holeData.jootanwootan ?? {}, cfg, prevCarry)
       } else if (cfg.type === 'hussein') {
@@ -559,9 +560,9 @@ export function calcAllResults(room: Room): {
     // OECD 페널티
     const oecdCfg = room.config.oecd
     if (oecdCfg.enabled) {
-      // 1) 임계값 초과 시 가입 (누적 획득금액 = 승리금 + 버디 손익)
+      // 1) 임계값 도달 시 가입 (내 보유액 = 기본분배 + 승리금 + 버디 손익 − 페널티)
       for (const pid of playerIds) {
-        const running = walletGains[pid] + buddyDeltas[pid]
+        const running = baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         if (running >= oecdCfg.threshold && running > 0) oecdMembers.add(pid)
       }
       // 2) 자동 가입: 전체 인원 중 1명만 남았으면 그 1명도 자동 가입
@@ -572,7 +573,7 @@ export function calcAllResults(room: Room): {
       for (const pid of playerIds) {
         if (!oecdMembers.has(pid)) continue
         const events = holeData.oecd?.[pid]
-        const running = walletGains[pid] + buddyDeltas[pid]
+        const running = baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         if (running > 0 && events) {
           const penalty = calcOecdPenalty(pid, events, holePar, scores[pid] ?? holePar, oecdCfg)
           oecdPenalties[pid] += penalty
@@ -601,7 +602,6 @@ export function calcAllResults(room: Room): {
   }
 
   // 플레이어 최종 손익
-  const baseDistribution = (buddyCfg?.enabled ? (buddyCfg.baseDistribution ?? 0) : 0)
   const playerTotals: Record<string, PlayerTotals> = {}
   for (const pid of playerIds) {
     const gameDelta  = gameDeltas[pid] ?? 0

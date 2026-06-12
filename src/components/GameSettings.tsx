@@ -269,8 +269,9 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     {(['team1', 'team2'] as const).map((t, i) => (
                       <div key={t} style={{ flex: 1, padding: 10, borderRadius: 8, background: 'var(--card)', border: '1px solid var(--border)' }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, color: i === 0 ? '#2563eb' : '#dc2626' }}>
-                          {i === 0 ? '🔵 팀 A' : '🔴 팀 B'}
+                        <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, marginBottom: 6, color: i === 0 ? '#2563eb' : '#dc2626' }}>
+                          <span style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#2563eb' : '#dc2626', flexShrink: 0 }} />
+                          팀
                         </p>
                         {orderedPlayers.map(p => (
                           <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, cursor: 'pointer' }}>

@@ -28,7 +28,7 @@ export interface GameConfig {
 
 export interface OecdConfig {
   enabled: boolean
-  threshold: number        // OECD 가입 기준 (누적 획득금액)
+  threshold: number        // OECD 가입 기준 (내 보유액: 기본분배 + 승리금 + 버디 손익 − 페널티)
   penaltyPerEvent: number  // 이벤트당 페널티
   maxPerHole: number       // 홀당 페널티 상한
 }
@@ -61,6 +61,7 @@ export interface HoleData {
   jootanwootan: Record<string, 'left' | 'right'>
   husseinPlayerId?: string     // 진행자 직접 지정 후세인
   lasvegasTeamA?: string[]     // 진행자 직접 지정 팀A (나머지가 팀B)
+  teamMatch?: 'blue' | 'red' | 'tie'  // 팀 매치플레이 홀 결과 (진행자 입력)
 }
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished'

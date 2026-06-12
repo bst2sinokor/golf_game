@@ -160,6 +160,10 @@ export async function savePlayerAmounts(roomId: string, amounts: Record<string, 
   if (Object.keys(updates).length > 0) await updateDoc(roomRef(roomId), updates)
 }
 
+export async function setTeamMatchResult(roomId: string, hole: number, result: 'blue' | 'red' | 'tie'): Promise<void> {
+  await updateDoc(roomRef(roomId), { [`holes.${hole}.teamMatch`]: result })
+}
+
 export async function setHusseinOverride(roomId: string, hole: number, playerId: string): Promise<void> {
   await updateDoc(roomRef(roomId), { [`holes.${hole}.husseinPlayerId`]: playerId })
 }

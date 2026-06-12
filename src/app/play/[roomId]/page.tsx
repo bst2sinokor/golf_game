@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride, setTeamMatchResult } from '@/lib/roomStore'
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
@@ -190,10 +190,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const isOecdTarget = useCallback(() => {
     if (!room || !room.config.oecd.enabled) return false
     const res = calcAllResults(room)
-    const total = res.playerTotals[targetId]
-    if (!total) return false
-    const running = total.walletGains + total.buddyNet
-    return running >= room.config.oecd.threshold && running > 0
+    return res.playerTotals[targetId]?.isOecd ?? false
   }, [room, targetId])
 
   async function saveScore() {
@@ -253,6 +250,24 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     : allIds
   const orderedPlayers = orderedIds.map(id => room.players[id]).filter(Boolean)
 
+  // ── 팀 매치플레이 누적 상황 (홀별 UP 카운트) ──
+  const teamMatchCfg = room.config.games.find(g => g.type === 'team-match')
+  const matchStatusByHole: Record<number, number> = {}  // 홀 → 누적 diff (블루 양수, 레드 음수)
+  let matchOverallDiff = 0
+  if (teamMatchCfg) {
+    let diff = 0
+    for (const h of [...teamMatchCfg.holes].sort((a, b) => a - b)) {
+      const r = room.holes[h]?.teamMatch
+      if (!r) continue
+      if (r === 'blue') diff += 1
+      else if (r === 'red') diff -= 1
+      matchStatusByHole[h] = diff
+    }
+    matchOverallDiff = diff
+  }
+  const matchCellText  = (d: number) => d === 0 ? 'T' : `${Math.abs(d)}UP`
+  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#dc2626' : '#0f172a'
+
   // 현재 편집 대상의 기존 점수
   const targetScore = holeScores[targetId]
   // 비진행자가 이미 입력한 경우 잠금
@@ -302,6 +317,32 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 {parSum}
               </td>
             </tr>
+            {teamMatchCfg && holes.some(h => teamMatchCfg.holes.includes(h)) && (
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <td style={{ padding: '4px 6px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb' }} />
+                    <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700 }}>/</span>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626' }} />
+                  </span>
+                </td>
+                {holes.map(h => {
+                  const d = matchStatusByHole[h]
+                  return (
+                    <td key={h} style={{
+                      padding: '4px 1px', textAlign: 'center', fontSize: 9, fontWeight: 800,
+                      color: d !== undefined ? matchCellColor(d) : 'transparent',
+                      background: h === viewHole ? 'rgba(251,191,36,.12)' : 'transparent',
+                    }}>
+                      {d !== undefined ? matchCellText(d) : ''}
+                    </td>
+                  )
+                })}
+                <td style={{ padding: '4px 2px', textAlign: 'center', fontSize: 9, fontWeight: 800, color: matchCellColor(matchOverallDiff) }}>
+                  {Object.keys(matchStatusByHole).length > 0 ? matchCellText(matchOverallDiff) : ''}
+                </td>
+              </tr>
+            )}
           </thead>
           <tbody>
             {orderedPlayers.map((p, pi) => {
@@ -626,6 +667,34 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 )
               })}
             </div>
+
+            {/* 팀 매치플레이 홀 결과 — 진행자 전용 */}
+            {isHost && teamMatchCfg && teamMatchCfg.holes.includes(viewHole) && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>팀 매치 홀 결과</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([
+                    { v: 'blue' as const, label: '팀 UP', dot: '#2563eb', bg: 'var(--blue)' },
+                    { v: 'red' as const,  label: '팀 UP', dot: '#dc2626', bg: 'var(--red)' },
+                    { v: 'tie' as const,  label: 'TIE',   dot: null,      bg: '#475569' },
+                  ]).map(({ v, label, dot, bg }) => {
+                    const sel = room.holes[viewHole]?.teamMatch === v
+                    return (
+                      <button key={v} onClick={() => setTeamMatchResult(roomId, viewHole, v)} style={{
+                        flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer',
+                        fontWeight: 700, fontSize: 14,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        background: sel ? bg : 'var(--bg)',
+                        color: sel ? '#fff' : 'var(--muted)',
+                      }}>
+                        {dot && <span style={{ width: 9, height: 9, borderRadius: '50%', background: sel ? '#fff' : dot, flexShrink: 0 }} />}
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 좌탄우탄 방향 */}
             {hasJootanwootan(viewHole) && (
