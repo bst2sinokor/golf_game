@@ -447,6 +447,7 @@ export function calcAllResults(room: Room): {
   sinperioNetScores: Record<string, number>
   sinperioTransfers: Settlement[]
   buddyResults: Record<number, { id: string; amount: number }[]>
+  oecdResults: Record<number, { id: string; amount: number }[]>
   settlements: Settlement[]
 } {
   const playerIds = Object.keys(room.players)
@@ -456,6 +457,7 @@ export function calcAllResults(room: Room): {
   const oecdPenalties: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const holeResults: Record<number, HoleGameResult[]> = {}
   const buddyResults: Record<number, { id: string; amount: number }[]> = {}
+  const oecdResults: Record<number, { id: string; amount: number }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
@@ -574,6 +576,9 @@ export function calcAllResults(room: Room): {
         if (running > 0 && events) {
           const penalty = calcOecdPenalty(pid, events, holePar, scores[pid] ?? holePar, oecdCfg)
           oecdPenalties[pid] += penalty
+          if (penalty > 0) {
+            (oecdResults[h] ??= []).push({ id: pid, amount: penalty })
+          }
         }
       }
     }
@@ -624,7 +629,7 @@ export function calcAllResults(room: Room): {
   // 최소 이체 정산
   const settlements = minimizeSettlements(playerTotals, room.players)
 
-  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, settlements }
+  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, settlements }
 }
 
 // ─── 최소 이체 정산 알고리즘 ─────────────────────────────────────────────────

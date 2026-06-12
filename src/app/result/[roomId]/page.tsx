@@ -27,7 +27,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
   const players  = Object.values(room.players)
   const results  = calcAllResults(room)
-  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults } = results
+  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults } = results
 
   // 홀별 스코어표
   const holeSummary = Array.from({ length: 18 }, (_, i) => i + 1).map(h => ({
@@ -213,8 +213,9 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
           const hr = holeResults[h]
           const buddies = buddyResults[h] ?? []
+          const penalties = oecdResults[h] ?? []
           const relevantResults = (hr ?? []).filter(r => r.game !== 'sinperio')
-          if (relevantResults.length === 0 && buddies.length === 0) return null
+          if (relevantResults.length === 0 && buddies.length === 0 && penalties.length === 0) return null
           return (
             <div key={h} style={{ marginBottom: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 4 }}>{h}홀</p>
@@ -230,6 +231,13 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                   <span style={{ color: '#16a34a', fontWeight: 600 }}>버디</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
                   {room.players[b.id]?.name ?? b.id} 버디! +{b.amount.toLocaleString()}원
+                </div>
+              ))}
+              {penalties.map((p, i) => (
+                <div key={`p${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
+                  <span style={{ color: '#b91c1c', fontWeight: 600 }}>OECD 페널티</span>
+                  <span style={{ color: 'var(--muted)' }}> · </span>
+                  {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
                 </div>
               ))}
             </div>

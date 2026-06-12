@@ -490,7 +490,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         {renderScorecard('후반', 10)}
 
         {/* 이번 홀 게임 결과 — 진행자 전용 */}
-        {isHost && allEntered && (holeResults.filter(r => r.game !== 'sinperio').length > 0 || (results.buddyResults[viewHole]?.length ?? 0) > 0) && (
+        {isHost && allEntered && (holeResults.filter(r => r.game !== 'sinperio').length > 0 || (results.buddyResults[viewHole]?.length ?? 0) > 0 || (results.oecdResults[viewHole]?.length ?? 0) > 0) && (
           <div style={{
             marginBottom: 14, borderRadius: 12, overflow: 'hidden',
             border: '2px solid #2563eb',
@@ -503,7 +503,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               {holeResults.filter(r => r.game !== 'sinperio').map((r, i, arr) => (
                 <div key={i} style={{
                   padding: '8px 0',
-                  borderBottom: i < arr.length - 1 || (results.buddyResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none',
+                  borderBottom: i < arr.length - 1 || (results.buddyResults[viewHole]?.length ?? 0) > 0 || (results.oecdResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none',
                 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, letterSpacing: '.3px' }}>
                     {GAME_LABELS[r.game]}
@@ -514,13 +514,25 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 </div>
               ))}
               {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
-                <div style={{ padding: '8px 0' }}>
+                <div style={{ padding: '8px 0', borderBottom: (results.oecdResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3, letterSpacing: '.3px' }}>
                     버디
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                     {results.buddyResults[viewHole].map(b =>
                       `${room.players[b.id]?.name ?? b.id} 버디! +${b.amount.toLocaleString()}원`
+                    ).join(' · ')}
+                  </div>
+                </div>
+              )}
+              {(results.oecdResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{ padding: '8px 0' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginBottom: 3, letterSpacing: '.3px' }}>
+                    OECD 페널티
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                    {results.oecdResults[viewHole].map(p =>
+                      `${room.players[p.id]?.name ?? p.id} −${p.amount.toLocaleString()}원`
                     ).join(' · ')}
                   </div>
                 </div>
@@ -622,35 +634,66 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
             {/* OECD 페널티 */}
             {room.config.oecd.enabled && isOecdTarget() && (
               <div style={{ marginBottom: 12, padding: 12, background: '#fef2f2', borderRadius: 8, border: '1px solid #fecaca' }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#b91c1c', marginBottom: 8 }}>OECD Penalty</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#b91c1c', marginBottom: 2 }}>OECD Penalty</p>
+                <p style={{ fontSize: 11, color: '#b91c1c', opacity: .75, marginBottom: 8 }}>
+                  트리플+ (파3는 더블+)는 자동 계산됩니다
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {[
                     { key: 'ob',        label: 'OB',          isCount: true },
                     { key: 'hazard',    label: 'Hazard',      isCount: true },
                     { key: 'bunker',    label: 'Bunker',      isCount: true },
-                    { key: 'threePutt', label: 'Three Putt',  isCount: false },
-                  ].map(({ key, label, isCount }) => {
-                    const val    = oecdInput[key as keyof OecdEvents]
-                    const active = isCount ? (val as number) > 0 : !!val
+                  ].map(({ key, label }) => {
+                    const val    = oecdInput[key as keyof OecdEvents] as number
+                    const active = val > 0
+                    const setVal = (n: number) => setOecdInput(prev => ({ ...prev, [key]: Math.max(0, n) }))
                     return (
-                      <div key={key} onClick={() => {
-                        if (isCount) setOecdInput(prev => ({ ...prev, [key]: (prev[key as keyof OecdEvents] as number) + 1 }))
-                        else setOecdInput(prev => ({ ...prev, [key]: !prev[key as keyof OecdEvents] }))
-                      }} style={{
-                        padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                      <div key={key} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '4px 4px 4px 12px', borderRadius: 8,
                         background: active ? '#fee2e2' : 'var(--bg)',
                         border: `1px solid ${active ? '#fca5a5' : 'var(--border)'}`,
-                        fontSize: 13, fontWeight: 600,
-                        color: active ? '#b91c1c' : 'var(--muted)',
                       }}>
-                        {label}{isCount && (val as number) > 0 ? ` ×${val}` : ''}
-                        {isCount && (val as number) > 0 && (
-                          <span onClick={e => { e.stopPropagation(); setOecdInput(prev => ({ ...prev, [key]: Math.max(0, (prev[key as keyof OecdEvents] as number) - 1) })) }}
-                            style={{ marginLeft: 6, opacity: .6 }}>↩</span>
-                        )}
+                        <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)' }}>
+                          {label}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <button onClick={() => setVal(val - 1)} disabled={val === 0} style={{
+                            width: 30, height: 30, borderRadius: 6, cursor: val === 0 ? 'default' : 'pointer',
+                            border: '1px solid var(--border)', background: '#fff',
+                            fontSize: 16, fontWeight: 700, color: val === 0 ? '#cbd5e1' : '#b91c1c',
+                          }}>−</button>
+                          <span style={{
+                            minWidth: 32, textAlign: 'center', fontSize: 14, fontWeight: 800,
+                            color: active ? '#b91c1c' : 'var(--muted)',
+                          }}>{val}회</span>
+                          <button onClick={() => setVal(val + 1)} style={{
+                            width: 30, height: 30, borderRadius: 6, cursor: 'pointer',
+                            border: '1px solid var(--border)', background: '#fff',
+                            fontSize: 16, fontWeight: 700, color: '#b91c1c',
+                          }}>+</button>
+                        </div>
                       </div>
                     )
                   })}
+                  {(() => {
+                    const active = !!oecdInput.threePutt
+                    return (
+                      <div onClick={() => setOecdInput(prev => ({ ...prev, threePutt: !prev.threePutt }))} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                        background: active ? '#fee2e2' : 'var(--bg)',
+                        border: `1px solid ${active ? '#fca5a5' : 'var(--border)'}`,
+                      }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)' }}>
+                          Three Putt
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: active ? '#b91c1c' : '#cbd5e1' }}>
+                          {active ? '✓ 적용' : '미적용'}
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
                 {scoreInput !== '' && (() => {
                   const s = Number(scoreInput)
