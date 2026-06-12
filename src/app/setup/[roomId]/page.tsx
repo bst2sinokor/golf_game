@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, saveConfig, startGame, savePlayerAmounts } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 
@@ -65,7 +65,16 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
       for (const p of Object.values(r.players)) amounts[p.id] = p.initialAmount ?? 0
       setInitAmounts(amounts)
     })
-    return unsub
+    // 모바일 절전 복귀 시 서버에서 강제 동기화
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      fetchRoomFromServer(roomId).then(r => { if (r) setRoom(r) })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      unsub()
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [roomId])
 
   function toggleGame(g: GameType) {

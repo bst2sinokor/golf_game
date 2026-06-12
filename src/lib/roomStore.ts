@@ -1,5 +1,5 @@
 import {
-  doc, setDoc, onSnapshot, updateDoc, getDoc, deleteField,
+  doc, setDoc, onSnapshot, updateDoc, getDoc, getDocFromServer, deleteField,
   collection, query, where, getDocs, deleteDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -170,6 +170,16 @@ export async function setLasvegasTeamAOverride(roomId: string, hole: number, tea
 
 export async function finishGame(roomId: string): Promise<void> {
   await updateDoc(roomRef(roomId), { status: 'finished' })
+}
+
+// 화면 복귀 시 서버에서 최신 상태 강제 조회 (모바일 절전 후 동기화 지연 대응)
+export async function fetchRoomFromServer(roomId: string): Promise<Room | null> {
+  try {
+    const snap = await getDocFromServer(roomRef(roomId))
+    return snap.exists() ? (snap.data() as Room) : null
+  } catch {
+    return null
+  }
 }
 
 export function subscribeRoom(

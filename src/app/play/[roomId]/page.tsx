@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride } from '@/lib/roomStore'
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
@@ -158,7 +158,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
       setRoom(r)
       setViewHole(r.currentHole)
     })
-    return unsub
+    // 모바일 절전 복귀 시 실시간 연결이 늦게 살아나는 경우 대비, 서버에서 강제 동기화
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      fetchRoomFromServer(roomId).then(r => {
+        if (r) { setRoom(r); setViewHole(r.currentHole) }
+      })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      unsub()
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [roomId])
 
   const isHost = room?.hostPlayerId === myId
