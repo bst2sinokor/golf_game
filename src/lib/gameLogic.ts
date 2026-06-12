@@ -90,7 +90,7 @@ function calcTeamMatch(
   }
   const winTeam  = t1sum < t2sum ? team1 : team2
   const loseTeam = t1sum < t2sum ? team2 : team1
-  const winName  = t1sum < t2sum ? '블루팀' : '그린팀'
+  const winName  = t1sum < t2sum ? '블루팀' : '오렌지팀'
   const perWinner = Math.floor(loserPays * loseTeam.length / winTeam.length)
   return {
     game: 'team-match', winners: winTeam,

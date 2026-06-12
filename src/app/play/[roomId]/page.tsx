@@ -327,7 +327,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     matchOverallDiff = diff
   }
   const matchCellText  = (d: number) => d === 0 ? 'T' : `${Math.abs(d)}UP`
-  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#16a34a' : '#0f172a'
+  const matchCellColor = (d: number) => d > 0 ? '#2563eb' : d < 0 ? '#ea580c' : '#0f172a'
 
   // 현재 편집 대상의 기존 점수
   const targetScore = holeScores[targetId]
@@ -381,12 +381,8 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
             {/* 매치 상황 줄: 이 카드의 9개 홀이 모두 팀매치 적용 홀일 때만 표시 */}
             {teamMatchCfg && holes.every(h => teamMatchCfg.holes.includes(h)) && (
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '4px 6px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: '#2563eb' }} />
-                    <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700 }}>/</span>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: '#16a34a' }} />
-                  </span>
+                <td style={{ padding: '4px 6px', fontSize: 10, fontWeight: 700, color: 'var(--muted)' }}>
+                  Match
                 </td>
                 {holes.map(h => {
                   const d = matchStatusByHole[h]
@@ -577,7 +573,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                             {(g.teams?.team1 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                           <span style={{ color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>vs</span>
-                          <span style={{ color: '#16a34a', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ color: '#ea580c', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {(g.teams?.team2 ?? []).map(id => room.players[id]?.name ?? '').join('·')}
                           </span>
                         </span>
@@ -724,7 +720,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     color: editPlayerId === p.id ? '#fff' : 'var(--muted)',
                     border: editPlayerId === p.id ? 'none' : '1px solid var(--border)',
                   }}>
-                    {p.name}{p.id === myId ? ' (나)' : ''}
+                    {p.name}
                   </button>
                 ))}
               </div>
