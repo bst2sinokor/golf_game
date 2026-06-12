@@ -551,10 +551,23 @@ export function calcAllResults(room: Room): {
         gameDeltas[id] = (gameDeltas[id] ?? 0) + d
         walletGains[id] = (walletGains[id] ?? 0) + d  // 스크레치는 지갑↔지갑 (손익 모두 반영)
       }
+      // 쌍별 이체 내역 (누가 누구에게 얼마)
+      const bet = scratchCfg.betPerStroke ?? 0
+      const ids = Object.keys(scores)
+      const pname = (id: string) => room.players[id]?.name ?? id
+      const transfers: string[] = []
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const a = ids[i], b = ids[j]
+          const diff = (scores[b] - scores[a]) * bet  // 양수면 b가 a에게 지급
+          if (diff > 0)      transfers.push(`${pname(b)} → ${pname(a)} ${diff.toLocaleString()}원`)
+          else if (diff < 0) transfers.push(`${pname(a)} → ${pname(b)} ${(-diff).toLocaleString()}원`)
+        }
+      }
       results.push({
         game: 'scratch', winners: [], loserPays: 0,
         carry: false, carryTotal: 0,
-        detail: '스크레치 홀별 정산',
+        detail: transfers.length > 0 ? transfers.join(' · ') : '전원 동타 (정산 없음)',
       })
     }
 
