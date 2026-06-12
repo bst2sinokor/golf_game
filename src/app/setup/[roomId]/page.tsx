@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts, saveCoursePreset, fetchCoursePresets, type CoursePreset } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts, saveCoursePreset, fetchCoursePresets, saveCourseCombo, fetchCourseCombos, type CoursePreset, type CourseCombo } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, EventConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
@@ -37,10 +37,14 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [teams, setTeams] = useState<{ team1: string[]; team2: string[] }>({ team1: [], team2: [] })
   // 홀별 파
   const [holePars, setHolePars] = useState<number[]>(DEFAULT_PAR)
-  // 골프장·코스 (프리셋: 선택 시 홀별 파 자동 적용, 다음 진행 시 저장)
-  const [club, setClub]     = useState('스마트KU')
-  const [course, setCourse] = useState('혼솔-바른')
-  const [presets, setPresets] = useState<CoursePreset[]>([])
+  // 골프장·코스 (전반/후반 9홀 코스 단위 프리셋)
+  const [club, setClub]               = useState('')
+  const [frontCourse, setFrontCourse] = useState('')
+  const [backCourse, setBackCourse]   = useState('')
+  const [presets, setPresets]         = useState<CoursePreset[]>([])
+  const [combos, setCombos]           = useState<CourseCombo[]>([])
+  const [courseConfirmed, setCourseConfirmed] = useState(false)
+  const [courseMsg, setCourseMsg]     = useState('')
   // 기본금액
   const [initAmounts, setInitAmounts] = useState<Record<string, number>>({})
   // OECD
@@ -86,18 +90,40 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     }
   }, [roomId])
 
-  // 코스 프리셋 로드
+  // 코스 프리셋·조합 로드
   useEffect(() => {
     fetchCoursePresets().then(setPresets)
+    fetchCourseCombos().then(setCombos)
   }, [])
 
-  // 골프장+코스가 저장된 프리셋과 일치하면 홀별 파 자동 적용
-  useEffect(() => {
-    const p = presets.find(x => x.club === club.trim() && x.course === course.trim())
-    if (p && Array.isArray(p.holePars) && p.holePars.length === 18) {
-      setHolePars([...p.holePars])
+  // 코스 적용: 저장된 코스면 홀별 파 적용, 없는 코스면 파4 기본 + 입력 안내
+  function applyCourse(c: string, f: string, b: string) {
+    if (!c.trim() || !f.trim() || !b.trim()) {
+      setCourseMsg('골프장과 전반·후반 코스 이름을 모두 입력해주세요.')
+      return
     }
-  }, [club, course, presets])
+    const front = presets.find(p => p.club === c.trim() && p.course === f.trim())
+    const back  = presets.find(p => p.club === c.trim() && p.course === b.trim())
+    const next  = [...holePars]
+    const missing: string[] = []
+    if (front) next.splice(0, 9, ...front.pars)
+    else { next.splice(0, 9, ...Array(9).fill(4)); missing.push(f.trim()) }
+    if (back) next.splice(9, 9, ...back.pars)
+    else { next.splice(9, 9, ...Array(9).fill(4)); missing.push(b.trim()) }
+    setHolePars(next)
+    setCourseConfirmed(true)
+    setCourseMsg(missing.length > 0
+      ? `'${missing.join("', '")}' 코스는 저장된 정보가 없습니다. 홀별 파를 입력해주세요. (기본 파4)`
+      : '저장된 홀별 파를 불러왔습니다.')
+  }
+
+  // 칩 선택: 골프장+전반+후반 일괄 입력 + 즉시 적용
+  function selectCombo(cb: CourseCombo) {
+    setClub(cb.club)
+    setFrontCourse(cb.frontCourse)
+    setBackCourse(cb.backCourse)
+    applyCourse(cb.club, cb.frontCourse, cb.backCourse)
+  }
 
   function toggleGame(g: GameType) {
     const next = new Set(selGames)
@@ -388,36 +414,64 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           {/* ② 홀 파 설정 */}
           {step === 'pars' && (
             <div className="card">
-              <p style={{ fontWeight: 700, marginBottom: 4 }}>홀별 파 설정</p>
-              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>총 파: {holePars.reduce((s,p) => s+p, 0)}</p>
+              <p style={{ fontWeight: 700, marginBottom: 12 }}>
+                홀별 파 설정 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>(총 파: {holePars.reduce((s,p) => s+p, 0)})</span>
+              </p>
 
-              {/* 골프장·코스 선택 (저장된 조합 선택 시 홀별 파 자동 적용) */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>골프장</label>
-                  <input type="text" list="club-list" value={club}
-                    onChange={e => setClub(e.target.value)}
-                    onFocus={e => e.target.select()}
-                    placeholder="골프장 이름"
-                    style={{ width: '100%' }} />
-                  <datalist id="club-list">
-                    {[...new Set(presets.map(p => p.club))].map(c => <option key={c} value={c} />)}
-                  </datalist>
+              {/* 저장된 코스 원터치 칩 */}
+              {combos.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  {combos.map(cb => {
+                    const sel = courseConfirmed
+                      && cb.club === club.trim() && cb.frontCourse === frontCourse.trim() && cb.backCourse === backCourse.trim()
+                    return (
+                      <button key={`${cb.club}_${cb.frontCourse}_${cb.backCourse}`} onClick={() => selectCombo(cb)} style={{
+                        padding: '6px 11px', borderRadius: 16, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700,
+                        background: sel ? 'var(--green)' : 'var(--bg)',
+                        color: sel ? '#fff' : 'var(--text)',
+                        border: sel ? 'none' : '1px solid var(--border)',
+                      }}>
+                        {cb.club} · {cb.frontCourse}/{cb.backCourse}
+                      </button>
+                    )
+                  })}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>코스</label>
-                  <input type="text" list="course-list" value={course}
-                    onChange={e => setCourse(e.target.value)}
-                    onFocus={e => e.target.select()}
-                    placeholder="코스 이름"
-                    style={{ width: '100%' }} />
-                  <datalist id="course-list">
-                    {presets.filter(p => p.club === club.trim()).map(p => <option key={p.course} value={p.course} />)}
-                  </datalist>
-                </div>
+              )}
+
+              {/* 골프장·전반/후반 코스 직접 입력 + 확정 */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                <input type="text" value={club}
+                  onChange={e => { setClub(e.target.value); setCourseConfirmed(false) }}
+                  placeholder="골프장 이름"
+                  style={{ flex: 1.2, minWidth: 0 }} />
+                <input type="text" value={frontCourse}
+                  onChange={e => { setFrontCourse(e.target.value); setCourseConfirmed(false) }}
+                  placeholder="전반코스"
+                  style={{ flex: 1, minWidth: 0 }} />
+                <input type="text" value={backCourse}
+                  onChange={e => { setBackCourse(e.target.value); setCourseConfirmed(false) }}
+                  placeholder="후반코스"
+                  style={{ flex: 1, minWidth: 0 }} />
+                <button onClick={() => applyCourse(club, frontCourse, backCourse)} style={{
+                  padding: '0 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, flexShrink: 0,
+                  background: courseConfirmed ? 'var(--green)' : 'var(--blue)', color: '#fff',
+                }}>
+                  {courseConfirmed ? '확정됨' : '확정'}
+                </button>
               </div>
+              {courseMsg && (
+                <p style={{ fontSize: 12, color: courseMsg.includes('불러왔') ? 'var(--green)' : '#d97706', fontWeight: 600, marginBottom: 10 }}>
+                  {courseMsg}
+                </p>
+              )}
+              <div style={{ marginBottom: 8 }} />
 
-              {['전반 (1~9홀)', '후반 (10~18홀)'].map((label, half) => (
+              {[
+                courseConfirmed ? `전반 (${frontCourse.trim()})` : '전반 (1~9홀)',
+                courseConfirmed ? `후반 (${backCourse.trim()})` : '후반 (10~18홀)',
+              ].map((label, half) => (
                 <div key={half} style={{ marginBottom: 16 }}>
                   <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{label}</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4 }}>
@@ -738,9 +792,16 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
               {step !== 'extras' ? (
                 <button className="btn btn-blue" disabled={step === 'games' && selGames.size === 0}
                   onClick={() => {
-                    if (step === 'pars' && club.trim() && course.trim()) {
-                      // 골프장·코스·홀파 프리셋 저장 (다음 라운드부터 자동 적용)
-                      void saveCoursePreset(club, course, holePars).then(() => fetchCoursePresets().then(setPresets))
+                    if (step === 'pars' && club.trim() && frontCourse.trim() && backCourse.trim()) {
+                      // 전반/후반 코스별 홀파 프리셋 + 조합(칩) 저장 (다음 라운드부터 원터치 적용)
+                      void Promise.all([
+                        saveCoursePreset(club, frontCourse, holePars.slice(0, 9)),
+                        saveCoursePreset(club, backCourse, holePars.slice(9)),
+                        saveCourseCombo(club, frontCourse, backCourse),
+                      ]).then(() => {
+                        fetchCoursePresets().then(setPresets)
+                        fetchCourseCombos().then(setCombos)
+                      })
                     }
                     setStep(step === 'pars' ? 'games' : step === 'games' ? 'money' : 'extras')
                   }}>

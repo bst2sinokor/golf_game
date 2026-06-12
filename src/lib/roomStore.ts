@@ -190,29 +190,55 @@ export async function finishGame(roomId: string): Promise<void> {
   await updateDoc(roomRef(roomId), { status: 'finished' })
 }
 
-// ─── 골프장·코스 프리셋 (홀별 파 저장/자동 불러오기) ─────────────────────────
+// ─── 골프장·코스 프리셋 (9홀 코스 단위로 파 저장/불러오기) ───────────────────
 
 export interface CoursePreset {
   club: string
   course: string
-  holePars: number[]
+  pars: number[]  // 9개 홀 파
 }
 
 function presetId(club: string, course: string): string {
   return `${club.trim()}__${course.trim()}`.replace(/\//g, '_')
 }
 
-export async function saveCoursePreset(club: string, course: string, holePars: number[]): Promise<void> {
-  if (!club.trim() || !course.trim()) return
+export async function saveCoursePreset(club: string, course: string, pars: number[]): Promise<void> {
+  if (!club.trim() || !course.trim() || pars.length !== 9) return
   await setDoc(doc(db, 'coursePresets', presetId(club, course)), {
-    club: club.trim(), course: course.trim(), holePars, updatedAt: Date.now(),
+    club: club.trim(), course: course.trim(), pars, updatedAt: Date.now(),
   })
 }
 
 export async function fetchCoursePresets(): Promise<CoursePreset[]> {
   try {
     const snap = await getDocs(collection(db, 'coursePresets'))
-    return snap.docs.map(d => d.data() as CoursePreset)
+    return snap.docs
+      .map(d => d.data() as CoursePreset)
+      .filter(p => Array.isArray(p.pars) && p.pars.length === 9)
+  } catch {
+    return []
+  }
+}
+
+// 골프장+전반+후반 조합 (원터치 칩 선택용)
+export interface CourseCombo {
+  club: string
+  frontCourse: string
+  backCourse: string
+}
+
+export async function saveCourseCombo(club: string, frontCourse: string, backCourse: string): Promise<void> {
+  if (!club.trim() || !frontCourse.trim() || !backCourse.trim()) return
+  const id = `${club.trim()}__${frontCourse.trim()}__${backCourse.trim()}`.replace(/\//g, '_')
+  await setDoc(doc(db, 'courseCombos', id), {
+    club: club.trim(), frontCourse: frontCourse.trim(), backCourse: backCourse.trim(), updatedAt: Date.now(),
+  })
+}
+
+export async function fetchCourseCombos(): Promise<CourseCombo[]> {
+  try {
+    const snap = await getDocs(collection(db, 'courseCombos'))
+    return snap.docs.map(d => d.data() as CourseCombo)
   } catch {
     return []
   }
