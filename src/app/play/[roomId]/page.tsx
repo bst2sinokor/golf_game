@@ -822,7 +822,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 <p style={{ fontSize: 11, color: '#b91c1c', opacity: .75, marginBottom: 8 }}>
                   트리플+ (파3는 더블+)는 자동 계산됩니다
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {[
                     { key: 'ob',        label: 'OB',          isCount: true },
                     { key: 'hazard',    label: 'Hazard',      isCount: true },
@@ -834,27 +834,27 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     return (
                       <div key={key} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '4px 4px 4px 12px', borderRadius: 8,
+                        padding: '4px 4px 4px 8px', borderRadius: 8, minWidth: 0,
                         background: active ? '#fee2e2' : 'var(--bg)',
                         border: `1px solid ${active ? '#fca5a5' : 'var(--border)'}`,
                       }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {label}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                           <button onClick={() => setVal(val - 1)} disabled={val === 0} style={{
-                            width: 30, height: 30, borderRadius: 6, cursor: val === 0 ? 'default' : 'pointer',
+                            width: 28, height: 28, borderRadius: 6, cursor: val === 0 ? 'default' : 'pointer',
                             border: '1px solid var(--border)', background: '#fff',
-                            fontSize: 16, fontWeight: 700, color: val === 0 ? '#cbd5e1' : '#b91c1c',
+                            fontSize: 15, fontWeight: 700, color: val === 0 ? '#cbd5e1' : '#b91c1c',
                           }}>−</button>
                           <span style={{
-                            minWidth: 32, textAlign: 'center', fontSize: 14, fontWeight: 800,
+                            minWidth: 24, textAlign: 'center', fontSize: 13, fontWeight: 800,
                             color: active ? '#b91c1c' : 'var(--muted)',
-                          }}>{val}회</span>
+                          }}>{val}</span>
                           <button onClick={() => setVal(val + 1)} style={{
-                            width: 30, height: 30, borderRadius: 6, cursor: 'pointer',
+                            width: 28, height: 28, borderRadius: 6, cursor: 'pointer',
                             border: '1px solid var(--border)', background: '#fff',
-                            fontSize: 16, fontWeight: 700, color: '#b91c1c',
+                            fontSize: 15, fontWeight: 700, color: '#b91c1c',
                           }}>+</button>
                         </div>
                       </div>
@@ -865,16 +865,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     return (
                       <div onClick={() => setOecdInput(prev => ({ ...prev, threePutt: !prev.threePutt }))} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                        padding: '4px 8px', borderRadius: 8, cursor: 'pointer', minWidth: 0, minHeight: 38,
                         background: active ? '#fee2e2' : 'var(--bg)',
                         border: `1px solid ${active ? '#fca5a5' : 'var(--border)'}`,
                       }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#b91c1c' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           Three Putt
                         </span>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: active ? '#b91c1c' : '#cbd5e1' }}>
-                          {active ? '✓ 적용' : '미적용'}
-                        </span>
+                        {active && (
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#b91c1c', flexShrink: 0 }}>
+                            ✓ 적용
+                          </span>
+                        )}
                       </div>
                     )
                   })()}
