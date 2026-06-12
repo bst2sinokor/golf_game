@@ -435,9 +435,10 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                         background: isActiveCell ? 'rgba(37,99,235,.18)' : h === viewHole ? 'rgba(37,99,235,.05)' : 'transparent',
                         cursor: isHost ? 'pointer' : 'default',
                       }}>
-                        <span className={score != null && score - par <= -1 ? 'score-neon' : undefined}>
-                          {score != null ? relStr(score, par) : '—'}
-                        </span>
+                        {score == null ? '—'
+                          : score - par <= -2 ? <span className="score-badge badge-violet">{relStr(score, par)}</span>
+                          : score - par === -1 ? <span className="score-badge badge-green">{relStr(score, par)}</span>
+                          : relStr(score, par)}
                       </td>
                     )
                   })}
