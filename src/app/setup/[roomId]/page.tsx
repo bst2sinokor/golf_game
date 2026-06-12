@@ -254,11 +254,11 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                   {/* 신페리오: 추가 옵션으로 분리 */}
                   {g === 'sinperio' && (
                     <div style={{ margin: '14px 0 2px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 16 }}>
                         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.8px', color: 'var(--muted)', flexShrink: 0 }}>Additional Option</span>
                         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                       </div>
-                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, marginBottom: 8 }}>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, marginBottom: 8, paddingLeft: 16 }}>
                         위 게임들과 중복으로 함께 진행되는 옵션입니다
                       </p>
                     </div>
