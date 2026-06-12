@@ -228,9 +228,9 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
               ))}
               {buddies.map((b, i) => (
                 <div key={`b${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
-                  <span style={{ color: '#16a34a', fontWeight: 600 }}>버디</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>버디값</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
-                  {room.players[b.id]?.name ?? b.id} 버디! +{b.amount.toLocaleString()}원
+                  {room.players[b.id]?.name ?? b.id} {b.label}! +{b.amount.toLocaleString()}원
                 </div>
               ))}
               {penalties.map((p, i) => (

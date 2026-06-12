@@ -678,11 +678,11 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
                 <div style={{ padding: '8px 0', borderBottom: (results.oecdResults[viewHole]?.length ?? 0) > 0 ? '1px solid #f1f5f9' : 'none' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3, letterSpacing: '.3px' }}>
-                    버디
+                    버디값
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                     {results.buddyResults[viewHole].map(b =>
-                      `${room.players[b.id]?.name ?? b.id} 버디! +${b.amount.toLocaleString()}원`
+                      `${room.players[b.id]?.name ?? b.id} ${b.label}! +${b.amount.toLocaleString()}원`
                     ).join(' · ')}
                   </div>
                 </div>
@@ -954,10 +954,10 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   padding: '10px 12px', borderRadius: 10, marginBottom: 8,
                   background: '#f0fdf4', border: '1px solid #86efac',
                 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3 }}>버디</p>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3 }}>버디값</p>
                   <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
                     {results.buddyResults[viewHole].map(b =>
-                      `${room.players[b.id]?.name ?? b.id} 버디! +${b.amount.toLocaleString()}원`
+                      `${room.players[b.id]?.name ?? b.id} ${b.label}! +${b.amount.toLocaleString()}원`
                     ).join(' · ')}
                   </p>
                 </div>

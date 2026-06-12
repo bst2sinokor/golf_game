@@ -474,7 +474,7 @@ export function calcAllResults(room: Room): {
   sinperioDeltas: Record<string, number>
   sinperioNetScores: Record<string, number>
   sinperioTransfers: Settlement[]
-  buddyResults: Record<number, { id: string; amount: number }[]>
+  buddyResults: Record<number, { id: string; amount: number; label: string }[]>
   oecdResults: Record<number, { id: string; amount: number; detail: string }[]>
   settlements: Settlement[]
 } {
@@ -484,7 +484,7 @@ export function calcAllResults(room: Room): {
   const buddyDeltas: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const oecdPenalties: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const holeResults: Record<number, HoleGameResult[]> = {}
-  const buddyResults: Record<number, { id: string; amount: number }[]> = {}
+  const buddyResults: Record<number, { id: string; amount: number; label: string }[]> = {}
   const oecdResults: Record<number, { id: string; amount: number; detail: string }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
@@ -586,7 +586,11 @@ export function calcAllResults(room: Room): {
             holeGains[maker]   += pay
           }
         }
-        buddyResults[h] = makers.map(m => ({ id: m, amount: holeGains[m] ?? 0 }))
+        buddyResults[h] = makers.map(m => {
+          const d = (scores[m] ?? holePar) - holePar
+          const label = d <= -3 ? '알바트로스' : d === -2 ? '이글' : '버디'
+          return { id: m, amount: holeGains[m] ?? 0, label }
+        })
       }
     }
 
