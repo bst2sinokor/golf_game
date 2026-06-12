@@ -580,12 +580,19 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
             </div>
           )}
 
-          {/* 게임 시작 버튼 */}
+          {/* 하단 버튼: 마지막 단계 전엔 [다음], 기타 단계에서 [게임 시작] */}
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
             <div style={{ maxWidth: 480, margin: '0 auto' }}>
-              <button className="btn btn-green" onClick={handleStart} disabled={selGames.size === 0}>
-                게임 시작 ({selGames.size}개 게임 선택됨)
-              </button>
+              {step !== 'extras' ? (
+                <button className="btn btn-blue" disabled={selGames.size === 0}
+                  onClick={() => setStep(step === 'games' ? 'pars' : step === 'pars' ? 'money' : 'extras')}>
+                  다음
+                </button>
+              ) : (
+                <button className="btn btn-green" onClick={handleStart} disabled={selGames.size === 0}>
+                  게임 시작 ({selGames.size}개 게임 선택됨)
+                </button>
+              )}
             </div>
           </div>
         </>
