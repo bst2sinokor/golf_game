@@ -87,7 +87,7 @@ function scoreColor(score: number | null | undefined, par: number): string {
   if (d <= -2) return '#1e1b4b'  // 알바트로스·이글
   if (d <= 0)  return '#16a34a'  // 버디·파
   if (d <= 2)  return '#ca8a04'  // 보기·더블보기
-  return '#991b1b'               // 트리플 이상·더블파
+  return '#dc2626'               // 트리플 이상·더블파 (빨간색)
 }
 
 // 플레이어 ID → 이름 치환
@@ -167,9 +167,9 @@ function scoreButtons(par: number) {
   const row2 = [
     { label: 'BOGEY',  value: par + 1, color: '#ca8a04' },
     { label: 'DOUBLE', value: par + 2, color: '#ca8a04' },
-    ...(par >= 4 ? [{ label: 'TRIPLE', value: par + 3, color: '#991b1b' }] : []),
-    ...(par >= 5 ? [{ label: 'QUAD',   value: par + 4, color: '#991b1b' }] : []),
-    { label: 'DBL-PAR', value: par * 2, color: '#991b1b' },
+    ...(par >= 4 ? [{ label: 'TRIPLE', value: par + 3, color: '#dc2626' }] : []),
+    ...(par >= 5 ? [{ label: 'QUAD',   value: par + 4, color: '#dc2626' }] : []),
+    { label: 'DBL-PAR', value: par * 2, color: '#dc2626' },
   ]
   return { row1, row2 }
 }
@@ -428,7 +428,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                           setViewHole(h)
                           setEditPlayerId(p.id)
                         }
-                      }} style={{
+                      }}
+                      className={score != null && score - par <= -1 ? 'score-neon' : undefined}
+                      style={{
                         padding: '7px 2px', textAlign: 'center', fontSize: 12, fontWeight: 800,
                         color: scoreColor(score, par),
                         background: isActiveCell ? 'rgba(37,99,235,.18)' : h === viewHole ? 'rgba(37,99,235,.05)' : 'transparent',
