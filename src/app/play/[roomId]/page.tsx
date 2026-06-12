@@ -229,13 +229,34 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   // 진행자는 editPlayerId 플레이어를 편집, 일반 참가자는 본인
   const targetId = isHost ? (editPlayerId || myId) : myId
 
+  // 편집 대상의 저장값 (다른 플레이어의 저장은 이 값들을 바꾸지 않음)
+  const savedScore   = room?.holes[viewHole]?.scores?.[targetId]
+  const savedOecdStr = JSON.stringify(room?.holes[viewHole]?.oecd?.[targetId] ?? null)
+  const savedDir     = room?.holes[viewHole]?.jootanwootan?.[targetId] ?? ''
+
+  // 홀·편집 대상이 바뀔 때만 저장값으로 입력칸 초기화
+  // (방 데이터 갱신 전체에 반응하면 다른 플레이어 저장 시 내 미저장 입력이 초기화됨)
+  const roomRef2 = useRef(room)
+  roomRef2.current = room
   useEffect(() => {
-    if (!room || !targetId) return
-    const saved = room.holes[viewHole]
+    if (!targetId) return
+    const saved = roomRef2.current?.holes[viewHole]
     setScoreInput(saved?.scores?.[targetId] ?? '')
     setOecdInput(saved?.oecd?.[targetId] ?? { ...EMPTY_OECD })
     setDirInput(saved?.jootanwootan?.[targetId] ?? '')
-  }, [viewHole, room, targetId])
+  }, [viewHole, targetId])
+
+  // 내 저장값이 원격에서 실제로 바뀐 경우에만 반영 (예: 진행자가 내 점수 수정)
+  useEffect(() => {
+    if (savedScore != null) setScoreInput(savedScore)
+  }, [savedScore])
+  useEffect(() => {
+    const o = JSON.parse(savedOecdStr)
+    if (o) setOecdInput(o)
+  }, [savedOecdStr])
+  useEffect(() => {
+    if (savedDir) setDirInput(savedDir)
+  }, [savedDir])
 
   const hasJootanwootan = (hole: number) =>
     room?.config.games.some(g => g.type === 'jootanwootan' && g.holes.includes(hole)) ?? false
