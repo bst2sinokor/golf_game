@@ -274,11 +274,10 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               {g === 'sinperio' && (
                 <div style={{ margin: '14px 0 2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.8px', color: 'var(--muted)' }}>ADDITIONAL OPTION</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.8px', color: 'var(--muted)', flexShrink: 0 }}>Additional Option</span>
                     <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                   </div>
-                  <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 4, marginBottom: 8 }}>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, marginBottom: 8 }}>
                     위 게임들과 중복으로 함께 진행되는 옵션입니다
                   </p>
                 </div>
