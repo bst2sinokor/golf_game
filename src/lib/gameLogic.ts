@@ -362,13 +362,21 @@ export function selectSinperioHoles(holePars: number[]): number[] {
 function calcSinperio(
   room: Room,
   cfg: GameConfig,
-): { deltas: Record<string, number>; netScores: Record<string, number>; transfers: Settlement[] } {
+): {
+  deltas: Record<string, number>
+  netScores: Record<string, number>
+  grossScores: Record<string, number>
+  handicaps: Record<string, number>
+  transfers: Settlement[]
+} {
   const { holePars } = room.config
   const selectedHoles = room.sinperioHoles
   const playerIds = Object.keys(room.players)
   const totalPar = holePars.reduce((s, p) => s + p, 0)
   const bet = cfg.totalBet ?? 0  // 타당 금액
   const netScores: Record<string, number> = {}
+  const grossScores: Record<string, number> = {}
+  const handicaps: Record<string, number> = {}
 
   for (const pid of playerIds) {
     let gross = 0
@@ -385,25 +393,38 @@ function calcSinperio(
     }
 
     const handicap = Math.round((selected6sum * 3 - totalPar) * 0.8)
-    netScores[pid] = gross - handicap
+    grossScores[pid] = gross
+    handicaps[pid]   = handicap
+    netScores[pid]   = gross - handicap
   }
 
-  // 플레이어 쌍별 넷스코어 타수 차이 × 타당 금액 정산
+  // 플레이어 쌍별 넷스코어 타수 차이 × 타당 금액 → 순손익 합산
   const deltas: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
-  const transfers: Settlement[] = []
-  const name = (id: string) => room.players[id]?.name ?? id
-
   for (let i = 0; i < playerIds.length; i++) {
     for (let j = i + 1; j < playerIds.length; j++) {
       const a = playerIds[i], b = playerIds[j]
       const diff = (netScores[b] - netScores[a]) * bet  // 양수면 a 승
       deltas[a] += diff
       deltas[b] -= diff
-      if (diff > 0)      transfers.push({ from: name(b), to: name(a), amount: diff })
-      else if (diff < 0) transfers.push({ from: name(a), to: name(b), amount: -diff })
     }
   }
-  return { deltas, netScores, transfers }
+
+  // 순손익 기준 최소 이체 (중간 경유 없이 직접 지급)
+  const name = (id: string) => room.players[id]?.name ?? id
+  const debtors   = playerIds.filter(id => deltas[id] < 0).map(id => ({ id, amt: -deltas[id] })).sort((a, b) => b.amt - a.amt)
+  const creditors = playerIds.filter(id => deltas[id] > 0).map(id => ({ id, amt:  deltas[id] })).sort((a, b) => b.amt - a.amt)
+  const transfers: Settlement[] = []
+  let di = 0, ci = 0
+  while (di < debtors.length && ci < creditors.length) {
+    const pay = Math.min(debtors[di].amt, creditors[ci].amt)
+    transfers.push({ from: name(debtors[di].id), to: name(creditors[ci].id), amount: pay })
+    debtors[di].amt   -= pay
+    creditors[ci].amt -= pay
+    if (debtors[di].amt === 0) di++
+    if (creditors[ci].amt === 0) ci++
+  }
+
+  return { deltas, netScores, grossScores, handicaps, transfers }
 }
 
 // ─── 홀별 팀 구성 (버디값 같은 팀 제외용) ────────────────────────────────────
@@ -473,6 +494,8 @@ export function calcAllResults(room: Room): {
   playerTotals: Record<string, PlayerTotals>
   sinperioDeltas: Record<string, number>
   sinperioNetScores: Record<string, number>
+  sinperioGross: Record<string, number>
+  sinperioHandicaps: Record<string, number>
   sinperioTransfers: Settlement[]
   buddyResults: Record<number, { id: string; amount: number; label: string }[]>
   oecdResults: Record<number, { id: string; amount: number; detail: string }[]>
@@ -659,6 +682,8 @@ export function calcAllResults(room: Room): {
 
   // 신페리오 (라운드 완료 시) — 지갑·정산과 분리, 플레이어간 별도 정산
   let sinperioNetScores: Record<string, number> = {}
+  let sinperioGross: Record<string, number> = {}
+  let sinperioHandicaps: Record<string, number> = {}
   let sinperioTransfers: Settlement[] = []
   const sinperioCfg = room.config.games.find(g => g.type === 'sinperio')
   const allScoresFilled = Array.from({ length: 18 }, (_, i) => i + 1).every(
@@ -668,6 +693,8 @@ export function calcAllResults(room: Room): {
     const sp = calcSinperio(room, sinperioCfg)
     sinperioDeltas = sp.deltas
     sinperioNetScores = sp.netScores
+    sinperioGross = sp.grossScores
+    sinperioHandicaps = sp.handicaps
     sinperioTransfers = sp.transfers
   }
 
@@ -699,7 +726,7 @@ export function calcAllResults(room: Room): {
   // 최소 이체 정산
   const settlements = minimizeSettlements(playerTotals, room.players)
 
-  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, eventResults, settlements }
+  return { holeResults, playerTotals, sinperioDeltas, sinperioNetScores, sinperioGross, sinperioHandicaps, sinperioTransfers, buddyResults, oecdResults, eventResults, settlements }
 }
 
 // ─── 최소 이체 정산 알고리즘 ─────────────────────────────────────────────────

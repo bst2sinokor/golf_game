@@ -6,6 +6,14 @@ import type { Room } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { calcAllResults, orderedPlayerIds } from '@/lib/gameLogic'
 
+// 스코어보드와 동일한 4그룹 색상
+function scoreColor(diff: number): string {
+  if (diff <= -2) return '#1e1b4b'  // 알바트로스·이글
+  if (diff <= 0)  return '#16a34a'  // 버디·파
+  if (diff <= 2)  return '#ca8a04'  // 보기·더블보기
+  return '#dc2626'                  // 트리플 이상·더블파
+}
+
 export default function ResultPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
   const router = useRouter()
@@ -27,7 +35,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
   const players  = orderedPlayerIds(room).map(id => room.players[id]).filter(Boolean)
   const results  = calcAllResults(room)
-  const { playerTotals, settlements, holeResults, sinperioDeltas, sinperioNetScores, sinperioTransfers, buddyResults, oecdResults, eventResults } = results
+  const { playerTotals, holeResults, sinperioDeltas, sinperioNetScores, sinperioGross, sinperioHandicaps, sinperioTransfers, buddyResults, oecdResults, eventResults } = results
 
   // 홀별 스코어표
   const holeSummary = Array.from({ length: 18 }, (_, i) => i + 1).map(h => ({
@@ -44,14 +52,16 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>방 코드: {roomId}</p>
       </div>
 
-      {/* 최종 손익 */}
+      {/* 최종 손익: 납부금 제외, 보유(지갑) + 신페리오 정산 합산 */}
       <div className="card" style={{ marginBottom: 16 }}>
         <p style={{ fontWeight: 700, marginBottom: 12, fontSize: 16 }}>인원별 최종 손익</p>
         {players
-          .sort((a, b) => (playerTotals[b.id]?.net ?? 0) - (playerTotals[a.id]?.net ?? 0))
+          .sort((a, b) =>
+            ((playerTotals[b.id]?.wallet ?? 0) + (sinperioDeltas[b.id] ?? 0))
+            - ((playerTotals[a.id]?.wallet ?? 0) + (sinperioDeltas[a.id] ?? 0)))
           .map((p, rank) => {
             const t = playerTotals[p.id]
-            const net = t?.net ?? 0
+            const net = (t?.wallet ?? 0) + (sinperioDeltas[p.id] ?? 0)
             const isMe = p.id === myId
             return (
               <div key={p.id} style={{
@@ -78,39 +88,12 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                   <p style={{ fontWeight: 800, fontSize: 20, color: net >= 0 ? 'var(--green)' : 'var(--red)' }}>
                     {net >= 0 ? '+' : ''}{net.toLocaleString()}원
                   </p>
-                  {p.initialAmount > 0 && (
-                    <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-                      최종 {(p.initialAmount + net).toLocaleString()}원
-                    </p>
-                  )}
                 </div>
               </div>
             )
           })}
       </div>
 
-      {/* 정산 방법 */}
-      {settlements.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <p style={{ fontWeight: 700, marginBottom: 12 }}>💸 정산 방법</p>
-          {settlements.map((s, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 12px', borderRadius: 8, marginBottom: 6,
-              background: 'rgba(255,255,255,.03)',
-            }}>
-              <span style={{ fontSize: 15 }}>
-                <span style={{ fontWeight: 700, color: '#f87171' }}>{s.from}</span>
-                <span style={{ color: 'var(--muted)' }}> → </span>
-                <span style={{ fontWeight: 700, color: '#4ade80' }}>{s.to}</span>
-              </span>
-              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--yellow)' }}>
-                {s.amount.toLocaleString()}원
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* 신페리오 상세 — 플레이어간 별도 정산 */}
       {Object.keys(sinperioDeltas).length > 0 && (
@@ -120,10 +103,11 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
             선정 홀: {room.sinperioHoles.join(', ')}홀 · 핸디캡 적용 넷스코어 타수 차 정산
           </p>
           {players.map(p => (
-            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
               <span style={{ fontWeight: 600 }}>{p.name}</span>
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-                넷 {sinperioNetScores[p.id]?.toLocaleString() ?? '-'}타
+                그로스 {sinperioGross[p.id] ?? '-'} · 핸디 {sinperioHandicaps[p.id] ?? '-'} →{' '}
+                <span style={{ fontWeight: 800, color: 'var(--green)' }}>넷 {sinperioNetScores[p.id] ?? '-'}타</span>
               </span>
             </div>
           ))}
@@ -176,7 +160,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                     return (
                       <td key={i} style={{
                         textAlign: 'center', padding: '6px', fontWeight: isMin ? 800 : 600,
-                        color: diff === null ? 'var(--muted)' : diff < 0 ? '#4ade80' : diff === 0 ? 'var(--text)' : diff === 1 ? '#fbbf24' : '#f87171',
+                        color: diff === null ? 'var(--muted)' : scoreColor(diff),
                       }}>{s}</td>
                     )
                   })}
