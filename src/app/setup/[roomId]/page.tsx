@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts } from '@/lib/roomStore'
+import { subscribeRoom, fetchRoomFromServer, saveConfig, startGame, savePlayerAmounts, saveCoursePreset, fetchCoursePresets, type CoursePreset } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, EventConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
@@ -18,7 +18,7 @@ const GAME_DESC: Record<GameType, string> = {
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
 }
 
-const DEFAULT_PAR = [4,3,4,4,5,3,4,5,4, 4,3,4,4,5,3,4,5,4]
+const DEFAULT_PAR = Array(18).fill(4)  // 기본: 전 홀 파4
 
 export default function SetupPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
@@ -37,6 +37,10 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [teams, setTeams] = useState<{ team1: string[]; team2: string[] }>({ team1: [], team2: [] })
   // 홀별 파
   const [holePars, setHolePars] = useState<number[]>(DEFAULT_PAR)
+  // 골프장·코스 (프리셋: 선택 시 홀별 파 자동 적용, 다음 진행 시 저장)
+  const [club, setClub]     = useState('스마트KU')
+  const [course, setCourse] = useState('혼솔-바른')
+  const [presets, setPresets] = useState<CoursePreset[]>([])
   // 기본금액
   const [initAmounts, setInitAmounts] = useState<Record<string, number>>({})
   // OECD
@@ -81,6 +85,19 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [roomId])
+
+  // 코스 프리셋 로드
+  useEffect(() => {
+    fetchCoursePresets().then(setPresets)
+  }, [])
+
+  // 골프장+코스가 저장된 프리셋과 일치하면 홀별 파 자동 적용
+  useEffect(() => {
+    const p = presets.find(x => x.club === club.trim() && x.course === course.trim())
+    if (p && Array.isArray(p.holePars) && p.holePars.length === 18) {
+      setHolePars([...p.holePars])
+    }
+  }, [club, course, presets])
 
   function toggleGame(g: GameType) {
     const next = new Set(selGames)
@@ -372,19 +389,46 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           {step === 'pars' && (
             <div className="card">
               <p style={{ fontWeight: 700, marginBottom: 4 }}>홀별 파 설정</p>
-              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>총 파: {holePars.reduce((s,p) => s+p, 0)}</p>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>총 파: {holePars.reduce((s,p) => s+p, 0)}</p>
+
+              {/* 골프장·코스 선택 (저장된 조합 선택 시 홀별 파 자동 적용) */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>골프장</label>
+                  <input type="text" list="club-list" value={club}
+                    onChange={e => setClub(e.target.value)}
+                    onFocus={e => e.target.select()}
+                    placeholder="골프장 이름"
+                    style={{ width: '100%' }} />
+                  <datalist id="club-list">
+                    {[...new Set(presets.map(p => p.club))].map(c => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>코스</label>
+                  <input type="text" list="course-list" value={course}
+                    onChange={e => setCourse(e.target.value)}
+                    onFocus={e => e.target.select()}
+                    placeholder="코스 이름"
+                    style={{ width: '100%' }} />
+                  <datalist id="course-list">
+                    {presets.filter(p => p.club === club.trim()).map(p => <option key={p.course} value={p.course} />)}
+                  </datalist>
+                </div>
+              </div>
+
               {['전반 (1~9홀)', '후반 (10~18홀)'].map((label, half) => (
                 <div key={half} style={{ marginBottom: 16 }}>
                   <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{label}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4 }}>
                     {Array.from({ length: 9 }, (_, i) => i + half * 9).map(idx => (
-                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{idx + 1}홀</span>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                        <span style={{ fontSize: 10, color: 'var(--muted)' }}>{idx + 1}홀</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                           {[3, 4, 5].map(p => (
                             <button key={p} onClick={() => setHolePars(prev => { const n = [...prev]; n[idx] = p; return n })} style={{
-                              width: 32, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer',
-                              fontSize: 13, fontWeight: 600,
+                              width: '100%', height: 26, borderRadius: 6, border: 'none', cursor: 'pointer',
+                              fontSize: 12, fontWeight: 600, padding: 0,
                               background: holePars[idx] === p ? (p === 3 ? 'var(--blue)' : p === 4 ? 'var(--green)' : 'var(--yellow)') : 'var(--border)',
                               color: holePars[idx] === p ? '#fff' : 'var(--muted)',
                             }}>{p}</button>
@@ -693,7 +737,13 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
             <div style={{ maxWidth: 480, margin: '0 auto' }}>
               {step !== 'extras' ? (
                 <button className="btn btn-blue" disabled={step === 'games' && selGames.size === 0}
-                  onClick={() => setStep(step === 'pars' ? 'games' : step === 'games' ? 'money' : 'extras')}>
+                  onClick={() => {
+                    if (step === 'pars' && club.trim() && course.trim()) {
+                      // 골프장·코스·홀파 프리셋 저장 (다음 라운드부터 자동 적용)
+                      void saveCoursePreset(club, course, holePars).then(() => fetchCoursePresets().then(setPresets))
+                    }
+                    setStep(step === 'pars' ? 'games' : step === 'games' ? 'money' : 'extras')
+                  }}>
                   다음
                 </button>
               ) : (

@@ -190,6 +190,34 @@ export async function finishGame(roomId: string): Promise<void> {
   await updateDoc(roomRef(roomId), { status: 'finished' })
 }
 
+// ─── 골프장·코스 프리셋 (홀별 파 저장/자동 불러오기) ─────────────────────────
+
+export interface CoursePreset {
+  club: string
+  course: string
+  holePars: number[]
+}
+
+function presetId(club: string, course: string): string {
+  return `${club.trim()}__${course.trim()}`.replace(/\//g, '_')
+}
+
+export async function saveCoursePreset(club: string, course: string, holePars: number[]): Promise<void> {
+  if (!club.trim() || !course.trim()) return
+  await setDoc(doc(db, 'coursePresets', presetId(club, course)), {
+    club: club.trim(), course: course.trim(), holePars, updatedAt: Date.now(),
+  })
+}
+
+export async function fetchCoursePresets(): Promise<CoursePreset[]> {
+  try {
+    const snap = await getDocs(collection(db, 'coursePresets'))
+    return snap.docs.map(d => d.data() as CoursePreset)
+  } catch {
+    return []
+  }
+}
+
 // 화면 복귀 시 서버에서 최신 상태 강제 조회 (모바일 절전 후 동기화 지연 대응)
 export async function fetchRoomFromServer(roomId: string): Promise<Room | null> {
   try {

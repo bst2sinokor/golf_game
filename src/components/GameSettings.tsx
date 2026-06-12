@@ -401,15 +401,15 @@ export default function GameSettings({ room, roomId, myId }: Props) {
           {['전반 (1~9홀)', '후반 (10~18홀)'].map((label, half) => (
             <div key={half} style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{label}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 4 }}>
                 {Array.from({ length: 9 }, (_, i) => i + half * 9).map(idx => (
-                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>{idx + 1}홀</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                    <span style={{ fontSize: 10, color: 'var(--muted)' }}>{idx + 1}홀</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                       {[3, 4, 5].map(p => (
                         <button key={p} onClick={() => setHolePars(prev => { const n = [...prev]; n[idx] = p; return n })} style={{
-                          width: 32, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer',
-                          fontSize: 13, fontWeight: 600,
+                          width: '100%', height: 26, borderRadius: 6, border: 'none', cursor: 'pointer',
+                          fontSize: 12, fontWeight: 600, padding: 0,
                           background: holePars[idx] === p
                             ? (p === 3 ? 'var(--blue)' : p === 4 ? 'var(--green)' : 'var(--yellow)')
                             : 'var(--border)',
