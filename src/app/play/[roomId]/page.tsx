@@ -383,7 +383,29 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
             Hole {viewHole}
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)', marginLeft: 5 }}>(par {holePar})</span>
           </h1>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 8 }}>
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+          {isHost && (
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>총납부금</p>
+              <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: bankBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                {bankBalance.toLocaleString()}원
+              </p>
+            </div>
+          )}
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>내 보유</p>
+            <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: myBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
+              {myBalance.toLocaleString()}원
+            </p>
+            {myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* 게임 태그 — 전체 폭 사용 */}
+      {holeGames.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: -6, marginBottom: 14 }}>
             {holeGames.map(g => {
               const td = getTeamDisplay(g, room, viewHole)
               const tagBg = GAME_TAG_STYLE[g.type] ?? '#64748b'
@@ -445,26 +467,8 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 </div>
               )
             })}
-          </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          {isHost && (
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>총납부금</p>
-              <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: bankBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                {bankBalance.toLocaleString()}원
-              </p>
-            </div>
-          )}
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>내 보유</p>
-            <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: myBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              {myBalance.toLocaleString()}원
-            </p>
-            {myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* ── 진행자 탭 ── */}
       {isHost && (
