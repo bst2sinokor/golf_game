@@ -445,19 +445,25 @@ function calcOecdPenalty(
   holePar: number,
   playerScore: number,
   oecdCfg: Room['config']['oecd'],
-): number {
-  if (!oecdCfg.enabled) return 0
+): { amount: number; detail: string } {
+  if (!oecdCfg.enabled) return { amount: 0, detail: '' }
   let count = 0
-  count += events.ob
-  count += events.hazard
-  count += events.bunker
-  if (events.threePutt) count += 1
+  const parts: string[] = []
+  if (events.ob > 0)     { count += events.ob;     parts.push(events.ob > 1 ? `OB ×${events.ob}` : 'OB') }
+  if (events.hazard > 0) { count += events.hazard; parts.push(events.hazard > 1 ? `Hazard ×${events.hazard}` : 'Hazard') }
+  if (events.bunker > 0) { count += events.bunker; parts.push(events.bunker > 1 ? `Bunker ×${events.bunker}` : 'Bunker') }
+  if (events.threePutt)  { count += 1; parts.push('Three Putt') }
   const isTripleOrWorse = holePar === 3
     ? playerScore >= holePar + 2   // 파3: 더블이상
     : playerScore >= holePar + 3   // 일반: 트리플이상
-  if (isTripleOrWorse || events.tripleOrWorse) count += 1
+  if (isTripleOrWorse || events.tripleOrWorse) {
+    count += 1
+    parts.push(holePar === 3 ? 'Double Bogey+' : 'Triple Bogey+')
+  }
   const raw = count * oecdCfg.penaltyPerEvent
-  return Math.min(raw, oecdCfg.maxPerHole)
+  const amount = Math.min(raw, oecdCfg.maxPerHole)
+  if (amount < raw) parts.push('상한 적용')
+  return { amount, detail: parts.join(' · ') }
 }
 
 // ─── 전체 정산 계산 (메인) ────────────────────────────────────────────────────
@@ -469,7 +475,7 @@ export function calcAllResults(room: Room): {
   sinperioNetScores: Record<string, number>
   sinperioTransfers: Settlement[]
   buddyResults: Record<number, { id: string; amount: number }[]>
-  oecdResults: Record<number, { id: string; amount: number }[]>
+  oecdResults: Record<number, { id: string; amount: number; detail: string }[]>
   settlements: Settlement[]
 } {
   const playerIds = Object.keys(room.players)
@@ -479,7 +485,7 @@ export function calcAllResults(room: Room): {
   const oecdPenalties: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const holeResults: Record<number, HoleGameResult[]> = {}
   const buddyResults: Record<number, { id: string; amount: number }[]> = {}
-  const oecdResults: Record<number, { id: string; amount: number }[]> = {}
+  const oecdResults: Record<number, { id: string; amount: number; detail: string }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
@@ -602,10 +608,10 @@ export function calcAllResults(room: Room): {
         const events = holeData.oecd?.[pid]
         const running = baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         if (running > 0 && events) {
-          const penalty = calcOecdPenalty(pid, events, holePar, scores[pid] ?? holePar, oecdCfg)
-          oecdPenalties[pid] += penalty
-          if (penalty > 0) {
-            (oecdResults[h] ??= []).push({ id: pid, amount: penalty })
+          const { amount, detail } = calcOecdPenalty(pid, events, holePar, scores[pid] ?? holePar, oecdCfg)
+          oecdPenalties[pid] += amount
+          if (amount > 0) {
+            (oecdResults[h] ??= []).push({ id: pid, amount, detail })
           }
         }
       }

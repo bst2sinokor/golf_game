@@ -699,11 +699,12 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginBottom: 3, letterSpacing: '.3px' }}>
                     OECD 페널티
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                    {results.oecdResults[viewHole].map(p =>
-                      `${room.players[p.id]?.name ?? p.id} −${p.amount.toLocaleString()}원`
-                    ).join(' · ')}
-                  </div>
+                  {results.oecdResults[viewHole].map((p, i) => (
+                    <div key={i} style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                      {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -950,10 +951,37 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     </p>
                   </div>
                 ))
-              ) : (
+              ) : (results.buddyResults[viewHole]?.length ?? 0) === 0 && (results.oecdResults[viewHole]?.length ?? 0) === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 14, padding: '12px 0' }}>
                   이번 홀 게임 결과 없음
                 </p>
+              ) : null}
+              {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 10, marginBottom: 8,
+                  background: '#f0fdf4', border: '1px solid #86efac',
+                }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3 }}>버디</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+                    {results.buddyResults[viewHole].map(b =>
+                      `${room.players[b.id]?.name ?? b.id} 버디! +${b.amount.toLocaleString()}원`
+                    ).join(' · ')}
+                  </p>
+                </div>
+              )}
+              {(results.oecdResults[viewHole]?.length ?? 0) > 0 && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 10, marginBottom: 8,
+                  background: '#fef2f2', border: '1px solid #fecaca',
+                }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginBottom: 3 }}>OECD 페널티</p>
+                  {results.oecdResults[viewHole].map((p, i) => (
+                    <p key={i} style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+                      {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
+                    </p>
+                  ))}
+                </div>
               )}
               <button className="btn btn-blue" style={{ marginTop: 4 }} onClick={() => setShowResultPopup(false)}>
                 확인

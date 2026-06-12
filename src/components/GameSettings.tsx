@@ -5,7 +5,7 @@ import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig } 
 import { GAME_LABELS } from '@/lib/types'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 
-const ALL_GAMES: GameType[] = ['stroke', 'team-match', 'jootanwootan', 'hussein', 'lasvegas', 'sinperio', 'scratch']
+const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
 
 const GAME_DESC: Record<GameType, string> = {
   stroke:       '홀별 최저 타수 승자가 판돈 획득',

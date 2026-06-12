@@ -238,6 +238,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                   <span style={{ color: '#b91c1c', fontWeight: 600 }}>OECD 페널티</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
                   {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                  <span style={{ color: 'var(--muted)' }}> ({p.detail})</span>
                 </div>
               ))}
             </div>
