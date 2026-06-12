@@ -20,9 +20,11 @@ export default function Home() {
       localStorage.setItem('golf_room',             roomId)
       localStorage.setItem(`golf_player_${roomId}`, playerId)
       router.push(`/setup/${roomId}`)
+      // 성공 시 loading 유지 → 화면 전환까지 "생성 중..." 표시
     } catch {
       setError('방 만들기 실패. 다시 시도해주세요.')
-    } finally { setLoading(false) }
+      setLoading(false)
+    }
   }
 
   async function handleJoin() {
@@ -37,9 +39,11 @@ export default function Home() {
       localStorage.setItem('golf_room',                cleanCode)
       localStorage.setItem(`golf_player_${cleanCode}`, result.playerId)
       router.push(`/play/${cleanCode}`)
+      // 성공 시 loading 유지 → 화면 전환까지 "처리 중..." 표시
     } catch {
       setError('참가 실패. 다시 시도해주세요.')
-    } finally { setLoading(false) }
+      setLoading(false)
+    }
   }
 
   return (
