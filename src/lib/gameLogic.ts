@@ -270,8 +270,22 @@ function calcHussein(
   const husseinId = resolved.id
   const alliesIds = playerIds.filter(id => id !== husseinId)
 
-  const husseinScore = (scores[husseinId] ?? 0) * 3
-  const alliesScore  = alliesIds.reduce((s, id) => s + (scores[id] ?? 0), 0)
+  // 대결 방식: 134=2등 vs 1·3·4등(본인×3 vs 3명 합), 13=2등 vs 1·3등(본인×2 vs 2명 합)
+  // 13 모드는 점수 비교만 1·3등으로, 금전 분배는 134와 동일(연합군 전원 지급/수령)
+  const mode = room.config.husseinMode ?? '134'
+  let husseinScore: number
+  let alliesScore: number
+  if (mode === '13') {
+    // 직전 순위로 연합군 정렬 → 상위 2명(1·3등)만 점수 대결, 최하위(4등)는 점수 제외
+    const rank = findFullRanking(room, hole)
+    const ranked = rank ? rank.filter(id => alliesIds.includes(id)) : []
+    const scoringAllies = (ranked.length === alliesIds.length ? ranked : [...alliesIds].sort()).slice(0, 2)
+    husseinScore = (scores[husseinId] ?? 0) * 2
+    alliesScore  = scoringAllies.reduce((s, id) => s + (scores[id] ?? 0), 0)
+  } else {
+    husseinScore = (scores[husseinId] ?? 0) * 3
+    alliesScore  = alliesIds.reduce((s, id) => s + (scores[id] ?? 0), 0)
+  }
   const perPerson = (cfg.betPerHole ?? 0) + prevCarry
 
   if (husseinScore === alliesScore) {

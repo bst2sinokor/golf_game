@@ -111,7 +111,8 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
     const r = resolveHussein(room, hole)
     if (r) {
       const name = room.players[r.id]?.name ?? '?'
-      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} 1:3`, unresolved: false }
+      const ratio = (room.config.husseinMode ?? '134') === '13' ? '1:2' : '1:3'
+      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} ${ratio}`, unresolved: false }
     }
     return { text: '미정', unresolved: true }
   }

@@ -12,7 +12,7 @@ const GAME_DESC: Record<GameType, string> = {
   stroke:       '홀별 최저 타수 승자가 판돈 획득',
   'team-match': '사전 팀 구성, 홀별 팀 합산 타수 비교',
   jootanwootan: '티샷 방향(좌/우)으로 매 홀 팀 구성',
-  hussein:      '직전 홀 2등 vs 1·3·4등 대결',
+  hussein:      '직전 홀 2등 vs 나머지 대결 (1·3·4등 / 1·3등 선택)',
   lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
   sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
@@ -70,6 +70,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   }))
   const [teamCarryKeep, setTeamCarryKeep] = useState(room.config.teamCarryKeep ?? true)
   const [teamAssign, setTeamAssign] = useState<'host' | 'random'>(room.config.teamAssign ?? 'host')
+  const [husseinMode, setHusseinMode] = useState<'134' | '13'>(room.config.husseinMode ?? '134')
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
   const [amountStep, setAmountStep] = useState(100000)
   const [amountConfirmed, setAmountConfirmed] = useState(() =>
@@ -150,7 +151,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       return cfg
     })
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign, husseinMode,
       ...(room.config.courseNames ? { courseNames: room.config.courseNames } : {}),
     }
     await Promise.all([
@@ -334,6 +335,28 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* 후세인: 대결 방식 */}
+              {selGames.has(g) && g === 'hussein' && (
+                <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
+                  <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>대결 방식</p>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {[{ v: '134' as const, l: '2등 vs 1·3·4등' }, { v: '13' as const, l: '2등 vs 1·3등' }].map(({ v, l }) => (
+                      <button key={v} onClick={() => setHusseinMode(v)} style={{
+                        flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                        border: '1px solid var(--border)',
+                        background: husseinMode === v ? 'var(--blue)' : 'var(--card)',
+                        color: husseinMode === v ? '#fff' : 'var(--muted)',
+                      }}>{l}</button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
+                    {husseinMode === '13'
+                      ? '후세인 점수 ×2 vs (1등+3등). 승패 판정만 1·3등 기준, 상금은 동일(승리 시 ×3 독식, 패배 시 전원 지급)'
+                      : '후세인 점수 ×3 vs (1등+3등+4등). 승리 시 ×3 독식, 패배 시 전원 지급'}
+                  </p>
                 </div>
               )}
 

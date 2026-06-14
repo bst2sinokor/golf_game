@@ -60,6 +60,7 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
     longest: { enabled: false, holes: [], amount: 10000 },
     teamCarryKeep: true,
     teamAssign: 'host',
+    husseinMode: '134',
   }
 
   const room: Room = {
