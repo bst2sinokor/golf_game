@@ -704,6 +704,22 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                 </div>
               </div>
 
+              {/* 팀게임 이월 시 팀 구성 */}
+              <div className="card">
+                <p style={{ fontWeight: 700, marginBottom: 2 }}>팀게임 이월시 다음게임 팀구성</p>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 판돈 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {[{ v: true, l: '팀 유지' }, { v: false, l: '팀 재구성' }].map(({ v, l }) => (
+                    <button key={l} onClick={() => setTeamCarryKeep(v)} style={{
+                      flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                      border: '1px solid var(--border)',
+                      background: teamCarryKeep === v ? 'var(--blue)' : 'var(--bg)',
+                      color: teamCarryKeep === v ? '#fff' : 'var(--muted)',
+                    }}>{l}</button>
+                  ))}
+                </div>
+              </div>
+
               {/* OECD */}
               <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -820,22 +836,6 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     })}
                   </>
                 )}
-              </div>
-
-              {/* 팀게임 이월 시 팀 구성 */}
-              <div className="card">
-                <p style={{ fontWeight: 700, marginBottom: 2 }}>팀게임 이월시 다음게임 팀구성</p>
-                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 판돈 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
-                <div style={{ display: 'flex', gap: 5 }}>
-                  {[{ v: true, l: '팀 유지' }, { v: false, l: '팀 재구성' }].map(({ v, l }) => (
-                    <button key={l} onClick={() => setTeamCarryKeep(v)} style={{
-                      flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                      border: '1px solid var(--border)',
-                      background: teamCarryKeep === v ? 'var(--blue)' : 'var(--bg)',
-                      color: teamCarryKeep === v ? '#fff' : 'var(--muted)',
-                    }}>{l}</button>
-                  ))}
-                </div>
               </div>
             </div>
           )}

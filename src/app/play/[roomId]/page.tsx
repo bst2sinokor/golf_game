@@ -187,6 +187,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const [saving, setSaving]         = useState(false)
   const [activeTab, setActiveTab]   = useState<'score' | 'settings'>('score')
   const [showResultPopup, setShowResultPopup] = useState(false)
+  const [balanceView, setBalanceView] = useState<'wallet' | 'bank'>('wallet')  // 우측 상단 금액 표시 (기본 내 보유)
   const popupShownRef = useRef(new Set<number>())
   const [pendingLvTeamA, setPendingLvTeamA] = useState<string[]>([])
   const [teeOrderSeen, setTeeOrderSeen] = useState(true)
@@ -531,7 +532,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
       {/* ── 헤더 ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ marginBottom: 4 }}>
+          <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             {room.status === 'playing' ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -556,29 +557,32 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 WAIT
               </span>
             )}
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', letterSpacing: 1 }}>
+              방 {roomId}
+            </span>
           </div>
           <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
             Hole {viewHole}
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)', marginLeft: 5 }}>(par {holePar})</span>
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          {isHost && (
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>총납부금</p>
-              <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: bankBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                {bankBalance.toLocaleString()}원
+        {(() => {
+          // 진행자만 내 보유 ⇄ 총납부금 전환, 참가자는 내 보유만
+          const showBank = isHost && balanceView === 'bank'
+          const amount = showBank ? bankBalance : myBalance
+          return (
+            <div onClick={() => { if (isHost) setBalanceView(v => v === 'wallet' ? 'bank' : 'wallet') }}
+              style={{ textAlign: 'right', flexShrink: 0, cursor: isHost ? 'pointer' : 'default' }}>
+              <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>
+                {showBank ? '총납부금' : '내 보유'}{isHost ? ' ⇄' : ''}
               </p>
+              <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: amount >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                {amount.toLocaleString()}원
+              </p>
+              {!showBank && myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
             </div>
-          )}
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>내 보유</p>
-            <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: myBalance >= 0 ? 'var(--green)' : 'var(--red)' }}>
-              {myBalance.toLocaleString()}원
-            </p>
-            {myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
-          </div>
-        </div>
+          )
+        })()}
       </div>
 
       {/* 게임 태그 — 전체 폭 사용 */}
@@ -993,19 +997,6 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 : pendingEvents.length > 0 ? ` (${pendingEvents.map(e => e.label).join('·')} 선택 필요)` : ''}
             </button>
           </div>
-        </div>
-      )}
-
-      {/* 참가자: 방 코드 고정 표시 */}
-      {!isHost && (
-        <div style={{
-          position: 'fixed', bottom: 12, right: 12,
-          background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)',
-          borderRadius: 8, padding: '4px 10px',
-          pointerEvents: 'none', zIndex: 50,
-        }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,.6)', letterSpacing: '.5px' }}>방 코드 </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>{roomId}</span>
         </div>
       )}
 
