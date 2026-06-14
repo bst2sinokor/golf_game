@@ -237,7 +237,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: p.id === myId ? 800 : 600 }}>{p.name}</span>
                   {p.id === myId && (
-                    <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700 }}>나 (진행자)</span>
+                    <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700 }}>(진행자)</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

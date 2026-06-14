@@ -530,12 +530,16 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
       )}
 
       {/* ── 헤더 ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ marginBottom: 14 }}>
+        {/* ① 상태 · 방코드 · 금액 */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+          paddingBottom: 8, marginBottom: 8, borderBottom: '1px solid var(--border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             {room.status === 'playing' ? (
               <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
+                display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
                 fontSize: 11, fontWeight: 800, letterSpacing: '.5px',
                 color: '#fff', background: '#dc2626',
                 borderRadius: 4, padding: '2px 7px',
@@ -548,7 +552,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               </span>
             ) : (
               <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
+                display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
                 fontSize: 11, fontWeight: 800, letterSpacing: '.5px',
                 color: '#fff', background: '#3b82f6',
                 borderRadius: 4, padding: '2px 7px',
@@ -557,32 +561,44 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 WAIT
               </span>
             )}
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', letterSpacing: 1 }}>
-              방 {roomId}
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
+              <span style={{ color: 'var(--muted)' }}>방 코드</span>
+              <span style={{ color: 'var(--green)', fontSize: 18 }}>{roomId}</span>
             </span>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
-            Hole {viewHole}
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)', marginLeft: 5 }}>(par {holePar})</span>
-          </h1>
+          {(() => {
+            // 진행자: 내 보유 / 총납부금 탭 전환, 참가자: 내 보유만
+            const showBank = isHost && balanceView === 'bank'
+            const amount = showBank ? bankBalance : myBalance
+            return (
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                {isHost ? (
+                  <div style={{ display: 'flex', gap: 3, justifyContent: 'flex-end', marginBottom: 3 }}>
+                    {([['bank', '총납부금'], ['wallet', '내 보유']] as const).map(([v, l]) => (
+                      <button key={v} onClick={() => setBalanceView(v)} style={{
+                        fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 10, cursor: 'pointer',
+                        border: '1px solid var(--border)', whiteSpace: 'nowrap',
+                        background: balanceView === v ? 'var(--blue)' : 'var(--bg)',
+                        color: balanceView === v ? '#fff' : 'var(--muted)',
+                      }}>{l}</button>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 11, color: 'var(--muted)', margin: '0 0 1px', whiteSpace: 'nowrap' }}>내 보유</p>
+                )}
+                <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: amount >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                  {amount.toLocaleString()}원
+                </p>
+                {!showBank && myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
+              </div>
+            )
+          })()}
         </div>
-        {(() => {
-          // 진행자만 내 보유 ⇄ 총납부금 전환, 참가자는 내 보유만
-          const showBank = isHost && balanceView === 'bank'
-          const amount = showBank ? bankBalance : myBalance
-          return (
-            <div onClick={() => { if (isHost) setBalanceView(v => v === 'wallet' ? 'bank' : 'wallet') }}
-              style={{ textAlign: 'right', flexShrink: 0, cursor: isHost ? 'pointer' : 'default' }}>
-              <p style={{ fontSize: 11, color: 'var(--muted)', margin: 0, whiteSpace: 'nowrap' }}>
-                {showBank ? '총납부금' : '내 보유'}{isHost ? ' ⇄' : ''}
-              </p>
-              <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: amount >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                {amount.toLocaleString()}원
-              </p>
-              {!showBank && myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
-            </div>
-          )
-        })()}
+        {/* ② Hole */}
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+          Hole {viewHole}
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)', marginLeft: 5 }}>(par {holePar})</span>
+        </h1>
       </div>
 
       {/* 게임 태그 — 전체 폭 사용 */}
@@ -795,7 +811,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 const sel = Number(scoreInput) === btn.value
                 return (
                   <button key={btn.label} onClick={() => setScoreInput(btn.value)} style={{
-                    flex: 1, padding: '8px 2px', borderRadius: 7, cursor: 'pointer',
+                    flex: 1, padding: '12px 2px', borderRadius: 7, cursor: 'pointer',
                     border: sel ? 'none' : '1px solid var(--border)',
                     background: sel ? btn.color : 'var(--bg)',
                     color: sel ? '#fff' : btn.color,
@@ -814,7 +830,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 const sel = Number(scoreInput) === btn.value
                 return (
                   <button key={btn.label} onClick={() => setScoreInput(btn.value)} style={{
-                    flex: 1, padding: '8px 2px', borderRadius: 7, cursor: 'pointer',
+                    flex: 1, padding: '12px 2px', borderRadius: 7, cursor: 'pointer',
                     border: sel ? 'none' : '1px solid var(--border)',
                     background: sel ? btn.color : 'var(--bg)',
                     color: sel ? '#fff' : btn.color,
