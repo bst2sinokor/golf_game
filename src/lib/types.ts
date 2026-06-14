@@ -55,6 +55,7 @@ export interface RoomConfig {
   nearest?: EventConfig    // 니어리스트
   longest?: EventConfig    // 롱기스트
   courseNames?: { club: string; front: string; back: string }  // 골프장·전반/후반 코스명
+  teamCarryKeep?: boolean  // 팀게임 무승부 이월 시 다음 홀에 팀 유지 (true=유지, false=재구성, 기본 재구성)
 }
 
 export interface OecdEvents {
@@ -99,6 +100,7 @@ export interface HoleGameResult {
   carry: boolean           // 이월 여부
   carryTotal: number       // 현재까지 누적 이월 판돈
   detail: string           // 표시용 설명
+  teams?: [string[], string[]]  // 이 홀에 사용된 두 팀 구성 (팀게임, 이월 팀 유지용)
 }
 
 export interface PlayerTotals {

@@ -53,11 +53,13 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   })
   // 버디
   const [buddy, setBuddy] = useState<BuddyConfig>({
-    enabled: false, baseDistribution: 0, buddyValue: 0, collectFromTeammates: false,
+    enabled: false, baseDistribution: 10000, buddyValue: 0, collectFromTeammates: false,
   })
   // 니어·롱기스트
   const [nearest, setNearest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
   const [longest, setLongest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
+  // 팀게임 이월 시 팀 유지 여부 (기본 팀 유지)
+  const [teamCarryKeep, setTeamCarryKeep] = useState(true)
   // 게임 상세 설명 팝업
   const [detailGame, setDetailGame] = useState<GameType | null>(null)
   // 판돈 단위
@@ -193,7 +195,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     })
 
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep,
       ...(club.trim() && frontCourse.trim() && backCourse.trim()
         ? { courseNames: { club: club.trim(), front: frontCourse.trim(), back: backCourse.trim() } }
         : {}),
@@ -756,10 +758,6 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                         </div>
                       )
                     })}
-                    <div style={{ padding: 10, background: 'var(--bg)', borderRadius: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-                      OB · Hazard · Bunker · Three Putt · Triple Bogey+ (Par 3: Double Bogey+)<br />
-                      각 {oecd.penaltyPerEvent.toLocaleString()}원, 홀당 최대 {oecd.maxPerHole.toLocaleString()}원
-                    </div>
                   </>
                 )}
               </div>
@@ -822,6 +820,22 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     })}
                   </>
                 )}
+              </div>
+
+              {/* 팀게임 이월 시 팀 구성 */}
+              <div className="card">
+                <p style={{ fontWeight: 700, marginBottom: 2 }}>팀게임 이월시 다음게임 팀구성</p>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 판돈 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {[{ v: true, l: '팀 유지' }, { v: false, l: '팀 재구성' }].map(({ v, l }) => (
+                    <button key={l} onClick={() => setTeamCarryKeep(v)} style={{
+                      flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                      border: '1px solid var(--border)',
+                      background: teamCarryKeep === v ? 'var(--blue)' : 'var(--bg)',
+                      color: teamCarryKeep === v ? '#fff' : 'var(--muted)',
+                    }}>{l}</button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

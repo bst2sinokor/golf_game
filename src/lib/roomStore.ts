@@ -52,12 +52,13 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
     },
     buddy: {
       enabled: false,
-      baseDistribution: 0,
+      baseDistribution: 10000,
       buddyValue: 0,
       collectFromTeammates: false,
     },
     nearest: { enabled: false, holes: [], amount: 10000 },
     longest: { enabled: false, holes: [], amount: 10000 },
+    teamCarryKeep: true,
   }
 
   const room: Room = {

@@ -1,5 +1,5 @@
 import type {
-  Room, GameConfig, HoleGameResult, PlayerTotals, Settlement, OecdEvents,
+  Room, GameConfig, GameType, HoleGameResult, PlayerTotals, Settlement, OecdEvents,
 } from './types'
 
 // ─── 유틸 ───────────────────────────────────────────────────────────────────
@@ -71,12 +71,14 @@ function calcTeamMatch(
   scores: Record<string, number>,
   cfg: GameConfig,
   prevCarry: number,
+  override?: [string[], string[]],   // 이월 팀 유지 시 직전 홀 팀 구성
 ): HoleGameResult | null {
-  const team1 = cfg.teams?.team1 ?? []
-  const team2 = cfg.teams?.team2 ?? []
+  const team1 = override ? override[0] : (cfg.teams?.team1 ?? [])
+  const team2 = override ? override[1] : (cfg.teams?.team2 ?? [])
   if (team1.length === 0 || team2.length === 0) return null
   // 양 팀 전원 점수 입력 전에는 판정 보류
   if (![...team1, ...team2].every(id => scores[id] != null)) return null
+  const teams: [string[], string[]] = [team1, team2]
   const t1sum = team1.reduce((s, id) => s + scores[id], 0)
   const t2sum = team2.reduce((s, id) => s + scores[id], 0)
   const loserPays = (cfg.betPerHole ?? 0) + prevCarry
@@ -84,7 +86,7 @@ function calcTeamMatch(
   if (t1sum === t2sum) {
     return {
       game: 'team-match', winners: [], loserPays: 0,
-      carry: true, carryTotal: loserPays,
+      carry: true, carryTotal: loserPays, teams,
       detail: `무승부 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
     }
   }
@@ -95,7 +97,7 @@ function calcTeamMatch(
   return {
     game: 'team-match', winners: winTeam,
     loserPays,
-    carry: false, carryTotal: 0,
+    carry: false, carryTotal: 0, teams,
     detail: `${winName} 승 (1인당 +${perWinner.toLocaleString()}원)`,
   }
 }
@@ -107,9 +109,11 @@ function calcJootanwootan(
   directions: Record<string, 'left' | 'right'>,
   cfg: GameConfig,
   prevCarry: number,
+  override?: [string[], string[]],   // 이월 팀 유지 시 직전 홀 [좌, 우] 구성
 ): HoleGameResult {
-  const leftIds  = Object.entries(directions).filter(([,d]) => d === 'left').map(([id]) => id)
-  const rightIds = Object.entries(directions).filter(([,d]) => d === 'right').map(([id]) => id)
+  const leftIds  = override ? override[0] : Object.entries(directions).filter(([,d]) => d === 'left').map(([id]) => id)
+  const rightIds = override ? override[1] : Object.entries(directions).filter(([,d]) => d === 'right').map(([id]) => id)
+  const teams: [string[], string[]] = [leftIds, rightIds]
   const lsum = leftIds.reduce((s, id)  => s + (scores[id] ?? 0), 0)
   const rsum = rightIds.reduce((s, id) => s + (scores[id] ?? 0), 0)
   const loserPays = (cfg.betPerHole ?? 0) + prevCarry
@@ -117,7 +121,7 @@ function calcJootanwootan(
   if (lsum === rsum) {
     return {
       game: 'jootanwootan', winners: [], loserPays: 0,
-      carry: true, carryTotal: loserPays,
+      carry: true, carryTotal: loserPays, teams,
       detail: `동점 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
     }
   }
@@ -128,7 +132,7 @@ function calcJootanwootan(
   return {
     game: 'jootanwootan', winners: winTeam,
     loserPays,
-    carry: false, carryTotal: 0,
+    carry: false, carryTotal: 0, teams,
     detail: `${side} 팀 승 (1인당 +${perWinner.toLocaleString()}원)`,
   }
 }
@@ -264,12 +268,16 @@ function calcLasvegas(
   cfg: GameConfig,
   room: Room,
   prevCarry: number,
+  override?: [string[], string[]],   // 이월 팀 유지 시 직전 홀 [A, B] 구성
 ): HoleGameResult {
   const playerIds = Object.keys(room.players)
 
   let teamA: string[], teamB: string[]
 
-  if (room.holes[hole]?.lasvegasTeamA) {
+  if (override) {
+    teamA = override[0]
+    teamB = override[1]
+  } else if (room.holes[hole]?.lasvegasTeamA) {
     teamA = room.holes[hole].lasvegasTeamA!
     teamB = playerIds.filter(id => !teamA.includes(id))
   } else {
@@ -285,6 +293,7 @@ function calcLasvegas(
     teamA = [rank[0], rank[3]]
     teamB = [rank[1], rank[2]]
   }
+  const teams: [string[], string[]] = [teamA, teamB]
   const aSum  = teamA.reduce((s, id) => s + (scores[id] ?? 0), 0)
   const bSum  = teamB.reduce((s, id) => s + (scores[id] ?? 0), 0)
   const loserPays = (cfg.betPerHole ?? 0) + prevCarry
@@ -295,7 +304,7 @@ function calcLasvegas(
   if (aSum === bSum) {
     return {
       game: 'lasvegas', winners: [], loserPays: 0,
-      carry: true, carryTotal: loserPays,
+      carry: true, carryTotal: loserPays, teams,
       detail: `동점 이월 (인당 ${loserPays.toLocaleString()}원 누적)`,
     }
   }
@@ -308,7 +317,7 @@ function calcLasvegas(
   return {
     game: 'lasvegas', winners: winTeam,
     loserPays,
-    carry: false, carryTotal: 0,
+    carry: false, carryTotal: 0, teams,
     detail: `${winNames} 팀 승 (1인당 +${perWinner.toLocaleString()}원)`,
   }
 }
@@ -516,11 +525,14 @@ export function calcAllResults(room: Room): {
   const buddyCfg = room.config.buddy
   const baseDistribution = buddyCfg?.baseDistribution ?? 0  // 버디 활성화와 무관하게 적용
 
-  // 게임별 이월 추적
-  const carryMap: Record<string, number> = {}
-  for (const cfg of room.config.games) {
-    carryMap[cfg.type] = 0
-  }
+  // 이월 추적 (총 상금 누적). 전달 규칙:
+  //  - 같은 게임 연속: 누적
+  //  - 단체전 → 개인전(스트로크): 팀 상금 전체를 개인 승자에게 몰빵
+  //  - 그 외(개인→단체, 다른 단체전 진입): 전달 안 됨, 은행에 남김(소멸)
+  let carry = 0
+  let carryType: GameType | null = null               // 이월 발생 게임 종류
+  let carryTeams: [string[], string[]] | null = null  // 직전 무승부 팀 구성 (팀 유지용)
+  const teamKeep = room.config.teamCarryKeep ?? true
 
   for (let h = 1; h <= 18; h++) {
     const holeData = room.holes[h]
@@ -531,29 +543,66 @@ export function calcAllResults(room: Room): {
 
     for (const cfg of room.config.games) {
       if (!cfg.holes.includes(h)) continue
-      const prevCarry = carryMap[cfg.type] ?? 0
+      if (cfg.type === 'scratch' || cfg.type === 'sinperio') continue  // 이월 비대상 (별도 처리)
+
+      // 이월 전달 규칙: 같은 게임이거나 개인전(스트로크)이 받을 때만 전달, 그 외엔 은행에 남김
+      const carryApplies = carry > 0 && (cfg.type === carryType || cfg.type === 'stroke')
+      if (carry > 0 && !carryApplies) {
+        // 다른 종류의 게임(특히 단체전)으로 진입 → 이월금 은행에 남기고 소멸
+        carry = 0; carryType = null; carryTeams = null
+      }
+
+      // 팀 유지: 직전 무승부가 같은 팀게임(좌탄우탄·라스베가스)이면 직전 팀 구성 재사용
+      const override = (teamKeep && carryApplies && carryTeams && carryType === cfg.type
+        && (cfg.type === 'jootanwootan' || cfg.type === 'lasvegas'))
+        ? carryTeams : undefined
       let result: HoleGameResult | null = null
 
+      // 홀 자체 판돈만 계산 (이월금은 별도 적립·지급)
       if (cfg.type === 'stroke') {
-        result = calcStroke(h, scores, cfg, prevCarry)
+        result = calcStroke(h, scores, cfg, 0)
       } else if (cfg.type === 'team-match') {
-        result = calcTeamMatch(scores, cfg, prevCarry)
+        result = calcTeamMatch(scores, cfg, 0, override)
       } else if (cfg.type === 'jootanwootan') {
-        result = calcJootanwootan(scores, holeData.jootanwootan ?? {}, cfg, prevCarry)
+        result = calcJootanwootan(scores, holeData.jootanwootan ?? {}, cfg, 0, override)
       } else if (cfg.type === 'hussein') {
-        result = calcHussein(h, scores, cfg, room, prevCarry)
+        result = calcHussein(h, scores, cfg, room, 0)
       } else if (cfg.type === 'lasvegas') {
-        result = calcLasvegas(h, scores, cfg, room, prevCarry)
+        result = calcLasvegas(h, scores, cfg, room, 0, override)
       }
 
       if (result) {
+        // 이번 홀에 걸린 총 상금 풀 (승리 측이 가져갈 금액)
+        const poolOf = (r: HoleGameResult): number => {
+          if (r.teams) {
+            const [a, b] = r.teams
+            return r.carryTotal * Math.max(1, Math.round((a.length + b.length) / 2))
+          }
+          if (cfg.type === 'hussein') return r.carryTotal * Math.max(1, playerIds.length - 1)
+          return r.carryTotal  // 스트로크: 승자 상금 = 설정금액
+        }
+
         if (result.carry) {
-          carryMap[cfg.type] = result.carryTotal
+          // 무승부 → 이번 홀 상금 풀을 이월에 누적 (carryApplies면 기존 이월 유지)
+          carry = (carryApplies ? carry : 0) + poolOf(result)
+          carryType = cfg.type
+          carryTeams = result.teams ?? null
+          result.detail = `이월 (누적 ${carry.toLocaleString()}원)`
         } else {
-          carryMap[cfg.type] = 0
+          // 승자 결정 → 적립 이월금 지급 (전달 조건 충족 시) 후 이번 홀 자체 정산
+          if (carryApplies && carry > 0 && result.winners.length > 0) {
+            const share = carry / result.winners.length
+            for (const wid of result.winners) {
+              gameDeltas[wid] += share
+              walletGains[wid] += share
+            }
+            result.detail += ` · 이월 +${carry.toLocaleString()}원`
+          }
+          carry = 0; carryType = null; carryTeams = null
+
           const losers = playerIds.filter(id => !result!.winners.includes(id))
           for (const wid of result.winners) {
-            // 스트로크: 승자는 홀당 설정금액(+이월)만 수령. 그 외 게임: 패자 수 비례 수령
+            // 스트로크: 승자는 홀당 설정금액만 수령. 그 외 게임: 패자 수 비례 수령
             const gain = cfg.type === 'stroke'
               ? result.loserPays / result.winners.length
               : result.loserPays * losers.length / result.winners.length

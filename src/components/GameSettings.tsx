@@ -60,7 +60,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   })
   const [oecd, setOecd] = useState<OecdConfig>(() => ({ ...room.config.oecd }))
   const [buddy, setBuddy] = useState<BuddyConfig>(() => ({
-    ...( room.config.buddy ?? { enabled: false, baseDistribution: 0, buddyValue: 0 })
+    ...( room.config.buddy ?? { enabled: false, baseDistribution: 10000, buddyValue: 0 })
   }))
   const [nearest, setNearest] = useState<EventConfig>(() => ({
     ...( room.config.nearest ?? { enabled: false, holes: [], amount: 10000 })
@@ -68,6 +68,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   const [longest, setLongest] = useState<EventConfig>(() => ({
     ...( room.config.longest ?? { enabled: false, holes: [], amount: 10000 })
   }))
+  const [teamCarryKeep, setTeamCarryKeep] = useState(room.config.teamCarryKeep ?? true)
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
   const [amountStep, setAmountStep] = useState(100000)
   const [amountConfirmed, setAmountConfirmed] = useState(() =>
@@ -148,7 +149,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       return cfg
     })
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep,
       ...(room.config.courseNames ? { courseNames: room.config.courseNames } : {}),
     }
     await Promise.all([
@@ -680,10 +681,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                     </div>
                   )
                 })}
-                <div style={{ padding: 10, background: 'var(--bg)', borderRadius: 8, fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  OB · Hazard · Bunker · Three Putt · Triple Bogey+ (Par 3: Double Bogey+)<br />
-                  각 {oecd.penaltyPerEvent.toLocaleString()}원, 홀당 최대 {oecd.maxPerHole.toLocaleString()}원
-                </div>
               </>
             )}
           </div>
@@ -746,6 +743,22 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                 })}
               </>
             )}
+          </div>
+
+          {/* 팀게임 이월 시 팀 구성 */}
+          <div className="card">
+            <p style={{ fontWeight: 700, marginBottom: 2 }}>팀게임 이월시 다음게임 팀구성</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 판돈 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[{ v: true, l: '팀 유지' }, { v: false, l: '팀 재구성' }].map(({ v, l }) => (
+                <button key={l} onClick={() => setTeamCarryKeep(v)} style={{
+                  flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  border: '1px solid var(--border)',
+                  background: teamCarryKeep === v ? 'var(--blue)' : 'var(--bg)',
+                  color: teamCarryKeep === v ? '#fff' : 'var(--muted)',
+                }}>{l}</button>
+              ))}
+            </div>
           </div>
         </div>
       )}
