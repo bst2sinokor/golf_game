@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { GAME_LABELS, type GameType } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
 
@@ -200,6 +200,10 @@ type Section = 'host' | 'player' | 'games' | 'common'
 
 export default function HowToModal({ onClose }: { onClose: () => void }) {
   const [section, setSection] = useState<Section>('host')
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  // 탭 전환 시 본문 스크롤을 맨 위로
+  useEffect(() => { bodyRef.current?.scrollTo({ top: 0 }) }, [section])
 
   const TABS: { v: Section; l: string }[] = [
     { v: 'host', l: '진행자' },
@@ -245,7 +249,7 @@ export default function HowToModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* 본문 */}
-        <div style={{ padding: 16, overflowY: 'auto', color: 'var(--text)' }}>
+        <div ref={bodyRef} style={{ padding: 16, overflowY: 'auto', color: 'var(--text)' }}>
           {section === 'host' && <GuideBody text={HOST_GUIDE} accent="#16a34a" />}
           {section === 'player' && <GuideBody text={PLAYER_GUIDE} accent="#2563eb" />}
           {section === 'common' && <GuideBody text={COMMON_GUIDE} accent="#d97706" />}
