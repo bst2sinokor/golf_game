@@ -4,7 +4,9 @@ import { useRouter } from 'next/navigation'
 import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finishGame, setHusseinOverride, setLasvegasTeamAOverride, setEventWinner } from '@/lib/roomStore'
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
-import { GAME_LABELS } from '@/lib/types'
+import { GAME_LABELS, type GameType } from '@/lib/types'
+import { GAME_DETAIL } from '@/lib/gameInfo'
+import GuideText, { GAME_COLOR } from '@/components/GuideText'
 import { calcAllResults, orderedPlayerIds, resolveHussein, resolveLasvegasTeamA } from '@/lib/gameLogic'
 
 const EMPTY_OECD: OecdEvents = { ob: 0, hazard: 0, bunker: 0, threePutt: false, tripleOrWorse: false }
@@ -184,6 +186,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   const [saving, setSaving]         = useState(false)
   const [activeTab, setActiveTab]   = useState<'score' | 'settings'>('score')
   const [showResultPopup, setShowResultPopup] = useState(false)
+  const [detailGame, setDetailGame] = useState<GameType | null>(null)
   const [balanceView, setBalanceView] = useState<'wallet' | 'bank'>('wallet')  // 우측 상단 금액 표시 (기본 내 보유)
   const popupShownRef = useRef(new Set<number>())
   const [pendingLvTeamA, setPendingLvTeamA] = useState<string[]>([])
@@ -499,6 +502,34 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px' }}>
 
+      {/* 게임 상세 설명 팝업 (스코어보드 게임명 탭) */}
+      {detailGame && (
+        <div onClick={() => setDetailGame(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(15,23,42,.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 16, overflow: 'hidden',
+            width: '100%', maxWidth: 360, maxHeight: '82vh', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 8px 32px rgba(0,0,0,.25)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 16px', background: GAME_COLOR[detailGame] }}>
+              <span style={{
+                width: 22, height: 22, borderRadius: 7, background: 'rgba(255,255,255,.25)', color: '#fff',
+                fontSize: 12, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>{GAME_LABELS[detailGame][0]}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{GAME_LABELS[detailGame]}</span>
+            </div>
+            <div style={{ padding: '14px 16px', overflowY: 'auto' }}>
+              <GuideText text={GAME_DETAIL[detailGame]} accent={GAME_COLOR[detailGame]} />
+            </div>
+            <div style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-blue" onClick={() => setDetailGame(null)}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1번홀 내 티샷 순서 팝업 (슬롯머신 연출) */}
       {!teeOrderSeen && room.status === 'playing' && room.currentHole === 1
         && (room.teeOrder?.length ?? 0) > 0 && room.teeOrder!.includes(myId) && (
@@ -614,13 +645,19 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               return (
                 <div key={g.type}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    <button onClick={() => setDetailGame(g.type)} style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3,
                       fontSize: 11, fontWeight: 800, letterSpacing: '.5px',
-                      padding: '2px 7px', borderRadius: 4, flexShrink: 0,
+                      padding: '3px 8px', borderRadius: 4, flexShrink: 0, border: 'none', cursor: 'pointer',
                       background: tagBg, color: '#fff',
                       whiteSpace: 'nowrap', overflow: 'hidden',
-                    }}>{GAME_LABELS[g.type]}</span>
+                    }}>{GAME_LABELS[g.type]}
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 12, height: 12, borderRadius: '50%', fontSize: 9, fontWeight: 900,
+                        background: 'rgba(255,255,255,.3)', color: '#fff', lineHeight: 1,
+                      }}>?</span>
+                    </button>
                     {td && !td.unresolved && (
                       g.type === 'team-match' ? (
                         <span style={{

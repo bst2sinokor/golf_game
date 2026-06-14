@@ -6,6 +6,7 @@ import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, E
 import { GAME_LABELS } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
 import { orderedPlayerIds } from '@/lib/gameLogic'
+import GuideText, { GAME_COLOR } from '@/components/GuideText'
 
 const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'jopok', 'sinperio']
 const GAME_DESC: Record<GameType, string> = {
@@ -16,7 +17,7 @@ const GAME_DESC: Record<GameType, string> = {
   lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
   sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
-  jopok:        '스킨스 + 벌칙/강탈 · 18홀 단독 진행 (다른 게임과 함께 불가)',
+  jopok:        '스킨스 + 벌칙/강탈 · 18홀 단독 (신페리오·니어·롱기와는 병행 가능)',
 }
 
 const DEFAULT_PAR = Array(18).fill(0)  // 0 = 미선택 (확정 시 프리셋 또는 파4로 채움)
@@ -241,15 +242,23 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: '#fff', borderRadius: 16, padding: '20px 18px',
-            width: '100%', maxWidth: 360, maxHeight: '80vh', overflowY: 'auto',
+            background: '#fff', borderRadius: 16, overflow: 'hidden',
+            width: '100%', maxWidth: 360, maxHeight: '82vh', display: 'flex', flexDirection: 'column',
             boxShadow: '0 8px 32px rgba(0,0,0,.25)',
           }}>
-            <p style={{ fontSize: 17, fontWeight: 800, marginBottom: 12 }}>{GAME_LABELS[detailGame]}</p>
-            <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, whiteSpace: 'pre-line', marginBottom: 16 }}>
-              {GAME_DETAIL[detailGame]}
-            </p>
-            <button className="btn btn-blue" onClick={() => setDetailGame(null)}>닫기</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 16px', background: GAME_COLOR[detailGame] }}>
+              <span style={{
+                width: 22, height: 22, borderRadius: 7, background: 'rgba(255,255,255,.25)', color: '#fff',
+                fontSize: 12, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>{GAME_LABELS[detailGame][0]}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{GAME_LABELS[detailGame]}</span>
+            </div>
+            <div style={{ padding: '14px 16px', overflowY: 'auto' }}>
+              <GuideText text={GAME_DETAIL[detailGame]} accent={GAME_COLOR[detailGame]} />
+            </div>
+            <div style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-blue" onClick={() => setDetailGame(null)}>닫기</button>
+            </div>
           </div>
         </div>
       )}
@@ -324,12 +333,12 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
               {ALL_GAMES.map(g => {
                 // 4인 미만이면 팀 게임(라스베가스·팀매치·좌탄우탄)은 새로 선택 불가
                 const teamGame = g === 'lasvegas' || g === 'team-match' || g === 'jootanwootan'
-                // 조폭은 18홀 단독 진행 → 다른 게임과 동시 선택 불가 (상호 배타)
+                // 조폭은 18홀 단독 → 다른 '메인' 게임과 배타. 단, 신페리오·니어·롱기는 병행 가능.
                 const jopokSelected = selGames.has('jopok')
-                const anyOther = ALL_GAMES.some(x => x !== 'jopok' && selGames.has(x))
+                const anyMainOther = ALL_GAMES.some(x => x !== 'jopok' && x !== 'sinperio' && selGames.has(x))
                 let blocked = teamGame && players.length < 4 && !selGames.has(g)
-                if (g === 'jopok' && !jopokSelected && anyOther) blocked = true
-                if (g !== 'jopok' && !selGames.has(g) && jopokSelected) blocked = true
+                if (g === 'jopok' && !jopokSelected && anyMainOther) blocked = true
+                if (g !== 'jopok' && g !== 'sinperio' && !selGames.has(g) && jopokSelected) blocked = true
                 return (
                 <div key={g}>
                   {/* 신페리오: 추가 옵션으로 분리 */}
@@ -442,7 +451,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                         {' '}버디 시 나머지 전원 보유금 강탈. 반납금은 그 홀 승자가 독식.
                       </p>
                       <p style={{ fontSize: 11, color: '#b45309', marginTop: 6, lineHeight: 1.5, fontWeight: 600 }}>
-                        18홀 전체에 단독으로 적용돼요(다른 게임과 함께 불가). 기본배분은 적용, 버디값은 미적용.
+                        18홀 전체에 단독으로 적용돼요(다른 메인 게임과 함께 불가, 단 신페리오·니어·롱기와는 병행 가능). 기본배분은 적용, 버디값은 미적용.
                       </p>
                     </div>
                   )}
