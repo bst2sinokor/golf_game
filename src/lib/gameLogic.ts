@@ -201,6 +201,55 @@ function findPrevRanking(room: Room, currentHole: number): string[] | null {
   return findFullRanking(room, currentHole)
 }
 
+// ─── 결정적(seeded) 랜덤 — 같은 홀은 항상 같은 결과 ──────────────────────────
+function hashStr(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) }
+  return h >>> 0
+}
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  let s = seed >>> 0
+  const rand = () => {
+    s = (s + 0x6D2B79F5) | 0
+    let t = Math.imul(s ^ (s >>> 15), 1 | s)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+// 후세인 결정 (진행자 지정 > 직전 순위 > A.I 랜덤). null = 미정(진행자 모드)
+export function resolveHussein(room: Room, hole: number): { id: string; ai: boolean } | null {
+  if (room.holes[hole]?.husseinPlayerId) return { id: room.holes[hole].husseinPlayerId!, ai: false }
+  const rank = findFullRanking(room, hole)
+  if (rank && rank.length >= 4) return { id: rank[1], ai: false }
+  if (room.config.teamAssign === 'random') {
+    const ids = Object.keys(room.players).sort()
+    if (ids.length >= 4) return { id: seededShuffle(ids, hashStr(room.id + ':hs:' + hole))[0], ai: true }
+  }
+  return null
+}
+
+// 라스베가스 팀A 결정 (진행자 지정 > 직전 순위 1+4위 > A.I 랜덤 2:2). null = 미정
+export function resolveLasvegasTeamA(room: Room, hole: number): { teamA: string[]; ai: boolean } | null {
+  if (room.holes[hole]?.lasvegasTeamA) return { teamA: room.holes[hole].lasvegasTeamA!, ai: false }
+  const rank = findFullRanking(room, hole)
+  if (rank && rank.length >= 4) return { teamA: [rank[0], rank[3]], ai: false }
+  if (room.config.teamAssign === 'random') {
+    const ids = Object.keys(room.players).sort()
+    if (ids.length >= 4) {
+      const o = seededShuffle(ids, hashStr(room.id + ':lv:' + hole))
+      return { teamA: [o[0], o[1]], ai: true }
+    }
+  }
+  return null
+}
+
 function calcHussein(
   hole: number,
   scores: Record<string, number>,
@@ -210,24 +259,16 @@ function calcHussein(
 ): HoleGameResult {
   const playerIds = Object.keys(room.players)
 
-  let husseinId: string | undefined
-  let alliesIds: string[]
-
-  if (room.holes[hole]?.husseinPlayerId) {
-    husseinId = room.holes[hole].husseinPlayerId!
-    alliesIds = playerIds.filter(id => id !== husseinId)
-  } else {
-    const rank = findFullRanking(room, hole)
-    if (!rank || rank.length < 4) {
-      return {
-        game: 'hussein', winners: [], loserPays: 0,
-        carry: false, carryTotal: 0,
-        detail: '후세인 미정 (진행자 지정 필요)',
-      }
+  const resolved = resolveHussein(room, hole)
+  if (!resolved) {
+    return {
+      game: 'hussein', winners: [], loserPays: 0,
+      carry: false, carryTotal: 0,
+      detail: '후세인 미정 (진행자 지정 필요)',
     }
-    husseinId = rank[1]
-    alliesIds = [rank[0], rank[2], rank[3]]
   }
+  const husseinId = resolved.id
+  const alliesIds = playerIds.filter(id => id !== husseinId)
 
   const husseinScore = (scores[husseinId] ?? 0) * 3
   const alliesScore  = alliesIds.reduce((s, id) => s + (scores[id] ?? 0), 0)
@@ -277,21 +318,17 @@ function calcLasvegas(
   if (override) {
     teamA = override[0]
     teamB = override[1]
-  } else if (room.holes[hole]?.lasvegasTeamA) {
-    teamA = room.holes[hole].lasvegasTeamA!
-    teamB = playerIds.filter(id => !teamA.includes(id))
   } else {
-    const rank = findFullRanking(room, hole)
-    if (!rank || rank.length < 4) {
+    const resolved = resolveLasvegasTeamA(room, hole)
+    if (!resolved) {
       return {
         game: 'lasvegas', winners: [], loserPays: 0,
         carry: false, carryTotal: 0,
         detail: '팀 미정 (진행자 지정 필요)',
       }
     }
-    // 1위+4위 vs 2위+3위
-    teamA = [rank[0], rank[3]]
-    teamB = [rank[1], rank[2]]
+    teamA = resolved.teamA
+    teamB = playerIds.filter(id => !teamA.includes(id))
   }
   const teams: [string[], string[]] = [teamA, teamB]
   const aSum  = teamA.reduce((s, id) => s + (scores[id] ?? 0), 0)
@@ -596,7 +633,7 @@ export function calcAllResults(room: Room): {
               gameDeltas[wid] += share
               walletGains[wid] += share
             }
-            result.detail += ` · 이월 +${carry.toLocaleString()}원`
+            result.detail += ` · 이월 (+${carry.toLocaleString()}원)`
           }
           carry = 0; carryType = null; carryTeams = null
 

@@ -5,7 +5,7 @@ import { subscribeRoom, fetchRoomFromServer, saveHoleData, setCurrentHole, finis
 import type { Room, OecdEvents, GameConfig } from '@/lib/types'
 import GameSettings from '@/components/GameSettings'
 import { GAME_LABELS } from '@/lib/types'
-import { calcAllResults, findFullRanking, orderedPlayerIds } from '@/lib/gameLogic'
+import { calcAllResults, orderedPlayerIds, resolveHussein, resolveLasvegasTeamA } from '@/lib/gameLogic'
 
 const EMPTY_OECD: OecdEvents = { ob: 0, hazard: 0, bunker: 0, threePutt: false, tripleOrWorse: false }
 
@@ -108,27 +108,20 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
     return { text: `${n1} vs ${n2}`, unresolved: false }
   }
   if (g.type === 'hussein') {
-    if (room.holes[hole]?.husseinPlayerId) {
-      const name = room.players[room.holes[hole].husseinPlayerId!]?.name ?? '?'
-      return { text: `${name} 1:3`, unresolved: false }
+    const r = resolveHussein(room, hole)
+    if (r) {
+      const name = room.players[r.id]?.name ?? '?'
+      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} 1:3`, unresolved: false }
     }
-    const rank = findFullRanking(room, hole)
-    if (rank && rank.length >= 4) return { text: `${room.players[rank[1]]?.name ?? '?'} 1:3`, unresolved: false }
     return { text: '미정', unresolved: true }
   }
   if (g.type === 'lasvegas') {
-    if (room.holes[hole]?.lasvegasTeamA) {
-      const tA = room.holes[hole].lasvegasTeamA!
-      const tB = Object.keys(room.players).filter(id => !tA.includes(id))
-      const a = tA.map(id => room.players[id]?.name ?? '?').join('+')
+    const r = resolveLasvegasTeamA(room, hole)
+    if (r) {
+      const tB = Object.keys(room.players).filter(id => !r.teamA.includes(id))
+      const a = r.teamA.map(id => room.players[id]?.name ?? '?').join('+')
       const b = tB.map(id => room.players[id]?.name ?? '?').join('+')
-      return { text: `${a} vs ${b}`, unresolved: false }
-    }
-    const rank = findFullRanking(room, hole)
-    if (rank && rank.length >= 4) {
-      const a = [rank[0], rank[3]].map(id => room.players[id]?.name ?? '?').join('+')
-      const b = [rank[1], rank[2]].map(id => room.players[id]?.name ?? '?').join('+')
-      return { text: `${a} vs ${b}`, unresolved: false }
+      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${a} vs ${b}`, unresolved: false }
     }
     return { text: '미정', unresolved: true }
   }
@@ -981,8 +974,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               </div>
             )}
 
-            <button className="btn btn-blue" onClick={saveScore}
-              disabled={scoreInput === '' || saving || (hasJootanwootan(viewHole) && !dirInput)}>
+            <button className="btn" onClick={saveScore}
+              disabled={scoreInput === '' || saving || (hasJootanwootan(viewHole) && !dirInput)}
+              style={{ background: targetScore != null ? '#d97706' : 'var(--blue)', color: '#fff' }}>
               {saving ? '저장 중...' : targetScore != null ? '수정' : '입력'}
               {hasJootanwootan(viewHole) && !dirInput && ' (방향 선택 필요)'}
             </button>

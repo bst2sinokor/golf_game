@@ -59,6 +59,7 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
     nearest: { enabled: false, holes: [], amount: 10000 },
     longest: { enabled: false, holes: [], amount: 10000 },
     teamCarryKeep: true,
+    teamAssign: 'host',
   }
 
   const room: Room = {

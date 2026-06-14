@@ -69,6 +69,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
     ...( room.config.longest ?? { enabled: false, holes: [], amount: 10000 })
   }))
   const [teamCarryKeep, setTeamCarryKeep] = useState(room.config.teamCarryKeep ?? true)
+  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>(room.config.teamAssign ?? 'host')
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
   const [amountStep, setAmountStep] = useState(100000)
   const [amountConfirmed, setAmountConfirmed] = useState(() =>
@@ -149,7 +150,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
       return cfg
     })
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign,
       ...(room.config.courseNames ? { courseNames: room.config.courseNames } : {}),
     }
     await Promise.all([
@@ -624,6 +625,22 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                 style={{ flex: 1, minWidth: 0 }} />
               <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: Math.max(0, (prev.baseDistribution ?? 0) - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
               <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: (prev.baseDistribution ?? 0) + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+            </div>
+          </div>
+
+          {/* 팀/역할 미정 시 배정 방식 */}
+          <div className="card">
+            <p style={{ fontWeight: 700, marginBottom: 2 }}>팀 구성 미정 시</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>라스베가스·후세인 팀/역할이 정해지지 않을 때 (예: 첫 홀)</p>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[{ v: 'host' as const, l: '진행자 배정' }, { v: 'random' as const, l: 'A.I 랜덤배정' }].map(({ v, l }) => (
+                <button key={v} onClick={() => setTeamAssign(v)} style={{
+                  flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  border: '1px solid var(--border)',
+                  background: teamAssign === v ? 'var(--blue)' : 'var(--bg)',
+                  color: teamAssign === v ? '#fff' : 'var(--muted)',
+                }}>{l}</button>
+              ))}
             </div>
           </div>
 

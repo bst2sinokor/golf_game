@@ -60,6 +60,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [longest, setLongest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })
   // 팀게임 이월 시 팀 유지 여부 (기본 팀 유지)
   const [teamCarryKeep, setTeamCarryKeep] = useState(true)
+  // 팀/역할 미정 시 배정 방식 (기본 진행자 배정)
+  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>('host')
   // 게임 상세 설명 팝업
   const [detailGame, setDetailGame] = useState<GameType | null>(null)
   // 판돈 단위
@@ -195,7 +197,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     })
 
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign,
       ...(club.trim() && frontCourse.trim() && backCourse.trim()
         ? { courseNames: { club: club.trim(), front: frontCourse.trim(), back: backCourse.trim() } }
         : {}),
@@ -701,6 +703,22 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     style={{ flex: 1, minWidth: 0 }} />
                   <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: Math.max(0, (prev.baseDistribution ?? 0) - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
                   <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: (prev.baseDistribution ?? 0) + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                </div>
+              </div>
+
+              {/* 팀/역할 미정 시 배정 방식 */}
+              <div className="card">
+                <p style={{ fontWeight: 700, marginBottom: 2 }}>팀 구성 미정 시</p>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>라스베가스·후세인 팀/역할이 정해지지 않을 때 (예: 첫 홀)</p>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  {[{ v: 'host' as const, l: '진행자 배정' }, { v: 'random' as const, l: 'A.I 랜덤배정' }].map(({ v, l }) => (
+                    <button key={v} onClick={() => setTeamAssign(v)} style={{
+                      flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                      border: '1px solid var(--border)',
+                      background: teamAssign === v ? 'var(--blue)' : 'var(--bg)',
+                      color: teamAssign === v ? '#fff' : 'var(--muted)',
+                    }}>{l}</button>
+                  ))}
                 </div>
               </div>
 
