@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { GAME_LABELS, type GameType } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
 
-const GAME_ORDER: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
+const GAME_ORDER: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'jopok', 'sinperio']
 
 // 게임별 강조 색 (플레이 화면 태그 색과 동일 계열)
 const GAME_COLOR: Record<GameType, string> = {
@@ -13,6 +13,7 @@ const GAME_COLOR: Record<GameType, string> = {
   jootanwootan: '#7c3aed',
   hussein: '#dc2626',
   scratch: '#0891b2',
+  jopok: '#334155',
   sinperio: '#64748b',
 }
 
@@ -27,6 +28,8 @@ const HOST_GUIDE = `진행자는 '방을 만들고 게임을 정하는 사람'�
 ① 코스설정 — 골프장·전반/후반 코스를 적고 [확정]. 홀마다 기준 타수(파)가 자동으로 채워져요.
 ② 기본설정 — 시작할 때 나눠줄 '기본 돈'과 규칙을 정해요. 잘 모르면 그대로 둬도 괜찮아요.
 ③ 게임선택 — 어떤 게임을, 몇 번 홀에서, 얼마에 할지 골라요. 이름 옆 (?)로 설명을 볼 수 있어요.
+   (4명 미만이면 팀 게임 — 라스베가스·팀매치·좌탄우탄 — 은 선택할 수 없어요)
+   ('조폭 스킨스'는 18홀 단독 게임이라 다른 게임과 함께 못 고르고, 진행 중 버디값은 적용되지 않아요. 기본배분은 적용)
 ④ 금액설정 — 각자 낼 돈을 적고 [게임 시작]을 누르면 시작!
 
 [3] 게임 중
@@ -37,6 +40,8 @@ const HOST_GUIDE = `진행자는 '방을 만들고 게임을 정하는 사람'�
 [4] 그 밖에
 • 화면 위쪽: 왼쪽엔 방 코드, 오른쪽엔 돈(총납부금 ↔ 내 보유)을 눌러 바꿔 봐요.
 • 게임 도중에도 ≡ 메뉴에서 사람 추가·순서 변경, 설정 변경이 가능해요.
+• 실수로 이 설정 화면으로 돌아왔다면, 방 코드 옆 [방으로 돌아가기]를 눌러 진행 중인 게임으로 다시 들어가요. (이미 시작된 방에서만 보여요)
+• 게임 도중에 새 사람이 들어와도 '기본 돈'은 받고, 들어온 다음 홀부터 정산에 포함돼요.
 
 [5] 끝나면
 • 18홀이 끝나면 '누가 누구에게 얼마를 주면 되는지' 정산 결과가 나와요.`

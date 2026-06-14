@@ -7,7 +7,7 @@ import { GAME_LABELS } from '@/lib/types'
 import { GAME_DETAIL } from '@/lib/gameInfo'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 
-const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
+const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'jopok', 'sinperio']
 const GAME_DESC: Record<GameType, string> = {
   stroke:       '홀별 최저 타수 승자가 판돈 획득',
   'team-match': '사전 팀 구성, 홀별 팀 합산 타수 비교',
@@ -16,6 +16,7 @@ const GAME_DESC: Record<GameType, string> = {
   lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
   sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
+  jopok:        '스킨스 + 벌칙/강탈 · 18홀 단독 진행 (다른 게임과 함께 불가)',
 }
 
 const DEFAULT_PAR = Array(18).fill(0)  // 0 = 미선택 (확정 시 프리셋 또는 파4로 채움)
@@ -64,6 +65,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [teamAssign, setTeamAssign] = useState<'host' | 'random'>('random')
   // 후세인 대결 방식 (기본 1·3·4등)
   const [husseinMode, setHusseinMode] = useState<'134' | '13'>('134')
+  // 조폭 반납 강도 (기본 더블50/트리플100)
+  const [jopokPenalty, setJopokPenalty] = useState<'double' | 'par3strict'>('double')
   // 게임 상세 설명 팝업
   const [detailGame, setDetailGame] = useState<GameType | null>(null)
   // 판돈 단위
@@ -140,9 +143,12 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     const next = new Set(selGames)
     if (next.has(g)) {
       next.delete(g)
+      if (g === 'jopok') setGameHoles(prev => ({ ...prev, jopok: [] }))
     } else {
       next.add(g)
-      if (!gameHoles[g]) setGameHoles(prev => ({ ...prev, [g]: [] }))
+      // 조폭은 18홀 전체 단독 진행 → 모든 홀 점유 (다른 게임은 홀을 못 잡음)
+      if (g === 'jopok') setGameHoles(prev => ({ ...prev, jopok: Array.from({ length: 18 }, (_, i) => i + 1) }))
+      else if (!gameHoles[g]) setGameHoles(prev => ({ ...prev, [g]: [] }))
       if (!gameBets[g])  setGameBets(prev => ({ ...prev, [g]: 10000 }))
     }
     setSelGames(next)
@@ -192,7 +198,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     const games: GameConfig[] = Array.from(selGames).map(type => {
       const cfg: GameConfig = {
         type,
-        holes: type === 'sinperio'
+        holes: (type === 'sinperio' || type === 'jopok')
           ? Array.from({ length: 18 }, (_, i) => i + 1)
           : gameHoles[type] ?? Array.from({ length: 18 }, (_, i) => i + 1),
       }
@@ -204,7 +210,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     })
 
     const config: RoomConfig = {
-      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign, husseinMode,
+      holePars, games, oecd, buddy, nearest, longest, teamCarryKeep, teamAssign, husseinMode, jopokPenalty,
       ...(club.trim() && frontCourse.trim() && backCourse.trim()
         ? { courseNames: { club: club.trim(), front: frontCourse.trim(), back: backCourse.trim() } }
         : {}),
@@ -259,9 +265,16 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
         </svg>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, lineHeight: '24px', margin: 0 }}>게임 설정</h1>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, lineHeight: '22px', marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, lineHeight: '22px', marginTop: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 16, color: 'var(--muted)' }}>방 코드</span>
             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 2, color: 'var(--green)' }}>{roomId}</span>
+            {/* 이미 게임이 시작된 방이면, 실수로 설정 화면에 온 진행자가 다시 플레이 화면으로 */}
+            {room.status === 'playing' && (
+              <button onClick={() => router.push(`/play/${roomId}`)} style={{
+                padding: '4px 11px', borderRadius: 16, cursor: 'pointer', border: 'none',
+                background: 'var(--blue)', color: '#fff', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+              }}>방으로 돌아가기</button>
+            )}
           </div>
         </div>
       </div>
@@ -308,7 +321,16 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
           {/* ① 게임 선택 */}
           {step === 'games' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {ALL_GAMES.map(g => (
+              {ALL_GAMES.map(g => {
+                // 4인 미만이면 팀 게임(라스베가스·팀매치·좌탄우탄)은 새로 선택 불가
+                const teamGame = g === 'lasvegas' || g === 'team-match' || g === 'jootanwootan'
+                // 조폭은 18홀 단독 진행 → 다른 게임과 동시 선택 불가 (상호 배타)
+                const jopokSelected = selGames.has('jopok')
+                const anyOther = ALL_GAMES.some(x => x !== 'jopok' && selGames.has(x))
+                let blocked = teamGame && players.length < 4 && !selGames.has(g)
+                if (g === 'jopok' && !jopokSelected && anyOther) blocked = true
+                if (g !== 'jopok' && !selGames.has(g) && jopokSelected) blocked = true
+                return (
                 <div key={g}>
                   {/* 신페리오: 추가 옵션으로 분리 */}
                   {g === 'sinperio' && (
@@ -322,8 +344,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                       </p>
                     </div>
                   )}
-                  <div className="card" onClick={() => toggleGame(g)} style={{
-                    cursor: 'pointer',
+                  <div className="card" onClick={() => { if (!blocked) toggleGame(g) }} style={{
+                    cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.5 : 1,
                     border: selGames.has(g) ? '2px solid var(--green)' : '1px solid var(--border)',
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -337,7 +359,12 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                           }}>?</button>
                         </p>
-                        <p style={{ fontSize: 12, color: 'var(--muted)' }}>{GAME_DESC[g]}</p>
+                        <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                          {GAME_DESC[g]}
+                          {blocked && (g === 'jopok' ? ' · 다른 게임 해제 후 선택 가능'
+                            : jopokSelected ? ' · 조폭 해제 후 선택 가능'
+                            : ' · 4인 이상부터 선택 가능')}
+                        </p>
                       </div>
                       <span style={{ fontSize: 20, marginLeft: 8 }}>{selGames.has(g) ? '✅' : '⬜'}</span>
                     </div>
@@ -372,25 +399,56 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
                       <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>대결 방식</p>
                       <div style={{ display: 'flex', gap: 5 }}>
-                        {[{ v: '134' as const, l: '2등 vs 1·3·4등' }, { v: '13' as const, l: '2등 vs 1·3등' }].map(({ v, l }) => (
-                          <button key={v} onClick={() => setHusseinMode(v)} style={{
-                            flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                            border: '1px solid var(--border)',
+                        {[{ v: '134' as const, l: '연합군 전원' }, { v: '13' as const, l: '최하위 1명 제외' }].map(({ v, l }) => {
+                          const disabled = v === '13' && players.length <= 3
+                          return (
+                          <button key={v} disabled={disabled} onClick={() => { if (!disabled) setHusseinMode(v) }} style={{
+                            flex: 1, padding: '8px 2px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700,
+                            border: '1px solid var(--border)', opacity: disabled ? 0.4 : 1,
                             background: husseinMode === v ? 'var(--blue)' : 'var(--card)',
                             color: husseinMode === v ? '#fff' : 'var(--muted)',
                           }}>{l}</button>
-                        ))}
+                          )
+                        })}
                       </div>
                       <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
-                        {husseinMode === '13'
-                          ? '후세인 점수 ×2 vs (1등+3등). 승패 판정만 1·3등 기준, 상금은 동일(승리 시 ×3 독식, 패배 시 전원 지급)'
-                          : '후세인 점수 ×3 vs (1등+3등+4등). 승리 시 ×3 독식, 패배 시 전원 지급'}
+                        {players.length <= 3
+                          ? '후세인 점수 vs 연합군 전원 타수 합. (최하위 1명 제외는 4인 이상부터 선택할 수 있어요)'
+                          : husseinMode === '13'
+                          ? '후세인 점수 vs 연합군 합 — 단, 그 홀에서 가장 못 친 연합군 1명은 제외하고 합산. 후세인 점수는 비교 인원수만큼 곱함. 상금은 동일(승리 시 인원수만큼 독식, 패배 시 전원 지급)'
+                          : '후세인 점수 ×3 vs 연합군 3명 타수 합. 승리 시 ×3 독식, 패배 시 전원 지급'}
                       </p>
                     </div>
                   )}
 
-                  {/* 적용 홀 선택 (신페리오는 전체 홀 고정) */}
-                  {selGames.has(g) && g !== 'sinperio' && (
+                  {/* 조폭: 반납 강도 + 18홀 단독 안내 */}
+                  {selGames.has(g) && g === 'jopok' && (
+                    <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
+                      <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>벌칙(반납) 강도</p>
+                      <div style={{ display: 'flex', gap: 5 }}>
+                        {[{ v: 'double' as const, l: '더블50 / 트리플+100' }, { v: 'par3strict' as const, l: '파3만 한 단계 엄격' }].map(({ v, l }) => (
+                          <button key={v} onClick={() => setJopokPenalty(v)} style={{
+                            flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                            border: '1px solid var(--border)',
+                            background: jopokPenalty === v ? 'var(--blue)' : 'var(--card)',
+                            color: jopokPenalty === v ? '#fff' : 'var(--muted)',
+                          }}>{l}</button>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
+                        {jopokPenalty === 'par3strict'
+                          ? '파4·5: 더블=누적 보유금 50%, 트리플+=100% 반납 / 파3: 보기=50%, 더블+=100% 반납. 반납액은 홀 설정금액 단위로 올림.'
+                          : '모든 홀: 더블=누적 보유금 50%, 트리플+=100% 반납. 반납액은 홀 설정금액 단위로 올림.'}
+                        {' '}버디 시 나머지 전원 보유금 강탈. 반납금은 그 홀 승자가 독식.
+                      </p>
+                      <p style={{ fontSize: 11, color: '#b45309', marginTop: 6, lineHeight: 1.5, fontWeight: 600 }}>
+                        18홀 전체에 단독으로 적용돼요(다른 게임과 함께 불가). 기본배분은 적용, 버디값은 미적용.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 적용 홀 선택 (신페리오·조폭은 전체 홀 고정) */}
+                  {selGames.has(g) && g !== 'sinperio' && g !== 'jopok' && (
                     <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <p style={{ fontSize: 13, color: 'var(--muted)' }}>적용 홀</p>
@@ -445,7 +503,8 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
 
               {/* 니어·롱기스트 설정 */}
               {([

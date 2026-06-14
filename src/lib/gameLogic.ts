@@ -271,16 +271,18 @@ function calcHussein(
   const husseinId = resolved.id
   const alliesIds = playerIds.filter(id => id !== husseinId)
 
-  // 대결 방식: 134=2등 vs 1·3·4등(본인×3 vs 3명 합), 13=2등 vs 1·3등(본인×2 vs 2명 합)
-  // 13 모드는 점수 비교만 1·3등으로, 금전 분배는 134와 동일(연합군 전원 지급/수령)
-  // 점수 대결 상대(연합군) 결정. 13 모드는 상위 2명(1·3등)만, 134 모드는 전원.
-  // 후세인 점수는 상대 인원수만큼 곱해 공정 비교 (4인 134=×3, 13=×2, 2인=×1)
+  // 대결 방식
+  //  - 134: 후세인 vs 연합군 전원 (본인 ×3 vs 3명 합)
+  //  - 13 : 후세인 vs 연합군 중 '그 홀에서 가장 못 친(타수 최다) 1명을 제외'한 나머지 합 (본인 ×남은 수)
+  // 13 모드는 점수 비교만 최하위 제외, 금전 분배는 134와 동일(연합군 전원 지급/수령)
+  // 후세인 점수는 비교 상대 인원수만큼 곱해 공정 비교 (4인 134=×3, 13=×2, 2인=×1)
   const mode = room.config.husseinMode ?? '134'
   let scoringAllies: string[]
-  if (mode === '13') {
-    const rank = findFullRanking(room, hole)
-    const ranked = rank ? rank.filter(id => alliesIds.includes(id)) : []
-    scoringAllies = (ranked.length === alliesIds.length ? ranked : [...alliesIds].sort()).slice(0, 2)
+  // '최하위 1명 제외'는 4인 이상(연합군 3명 이상)에서만 적용, 3인 이하는 연합군 전원
+  if (mode === '13' && alliesIds.length >= 3) {
+    // 이 홀 점수 오름차순 정렬 후 가장 못 친(맨 뒤) 1명 제외
+    const sorted = [...alliesIds].sort((a, b) => (scores[a] ?? 0) - (scores[b] ?? 0))
+    scoringAllies = sorted.slice(0, sorted.length - 1)
   } else {
     scoringAllies = alliesIds
   }
@@ -582,6 +584,13 @@ export function calcAllResults(room: Room): {
   const buddyCfg = room.config.buddy
   const baseDistribution = buddyCfg?.baseDistribution ?? 0  // 버디 활성화와 무관하게 적용
 
+  // 조폭 스킨스 (스킨스 + 반납/강탈, 18홀 전체·홀별 순차 누적). 버디값은 조폭 시 미적용.
+  const jopokCfg = room.config.games.find(g => g.type === 'jopok')
+  const jopokBet = jopokCfg?.betPerHole ?? 0
+  const jopokMode = room.config.jopokPenalty ?? 'double'
+  const jopokHold: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
+  let jopokCarry = 0
+
   // 이월 추적 (총 상금 누적). 전달 규칙:
   //  - 같은 게임 연속: 누적
   //  - 단체전 → 개인전(스트로크): 팀 상금 전체를 개인 승자에게 몰빵
@@ -707,8 +716,59 @@ export function calcAllResults(room: Room): {
       })
     }
 
-    // 버디값 계산 (지갑↔지갑, 같은 팀 제외 옵션)
-    if (buddyCfg?.enabled && (buddyCfg.buddyValue ?? 0) > 0) {
+    // 조폭 스킨스 (홀별 순차: ① 반납 → ② 최저타 승자 귀속(동타 이월) → ③ 버디 강탈)
+    if (jopokCfg && jopokCfg.holes.includes(h) && holePlayers.length > 0) {
+      const pname = (id: string) => room.players[id]?.name ?? id
+      const lines: string[] = []
+      // ① 반납: 그동안 딴 누적 보유금의 일정 %를 토해냄 (홀 설정금액 단위 올림, 보유 한도 내)
+      let pool = 0
+      for (const pid of holePlayers) {
+        const diff = (scores[pid] ?? holePar) - holePar
+        const par3strict = jopokMode === 'par3strict' && holePar <= 3
+        let pct = 0
+        if (par3strict) { if (diff === 1) pct = 0.5; else if (diff >= 2) pct = 1 }
+        else { if (diff === 2) pct = 0.5; else if (diff >= 3) pct = 1 }
+        if (pct > 0 && jopokHold[pid] > 0 && jopokBet > 0) {
+          let amt = Math.ceil((jopokHold[pid] * pct) / jopokBet) * jopokBet  // 설정금액 단위 올림
+          amt = Math.min(amt, jopokHold[pid])                                // 보유 한도
+          jopokHold[pid] -= amt; pool += amt
+          lines.push(`${pname(pid)} 반납 (-${amt.toLocaleString()}원)`)
+        }
+      }
+      // ② 최저타 승자가 스킨+반납금 독식, 동타면 다음 홀 이월
+      const minSc = Math.min(...holePlayers.map(id => scores[id] ?? Infinity))
+      const lowest = holePlayers.filter(id => (scores[id] ?? Infinity) === minSc)
+      const skinPot = jopokBet + jopokCarry + pool
+      let jopokWinner: string | null = null
+      if (lowest.length === 1) { jopokWinner = lowest[0]; jopokHold[jopokWinner] += skinPot; jopokCarry = 0 }
+      else { jopokCarry = skinPot }
+      // ③ 버디(이상) 강탈: 버디한 사람이 나머지 전원의 보유금을 가져옴 (버디 여럿이면 균등 분배)
+      const birdies = holePlayers.filter(id => (scores[id] ?? Infinity) <= holePar - 1)
+      if (birdies.length > 0) {
+        let stealPot = 0
+        for (const pid of holePlayers) {
+          if (birdies.includes(pid)) continue
+          if (jopokHold[pid] > 0) { stealPot += jopokHold[pid]; jopokHold[pid] = 0 }
+        }
+        if (stealPot > 0) {
+          const share = Math.floor(stealPot / birdies.length)
+          let rem = stealPot - share * birdies.length
+          for (const bid of birdies) { jopokHold[bid] += share + (rem > 0 ? 1 : 0); if (rem > 0) rem-- }
+          lines.push(`버디 강탈 ${birdies.map(pname).join('·')} (+${stealPot.toLocaleString()}원)`)
+        }
+      }
+      let detail = jopokWinner
+        ? `${pname(jopokWinner)} 획득 (+${skinPot.toLocaleString()}원)`
+        : `동타 이월 (누적 ${jopokCarry.toLocaleString()}원)`
+      if (lines.length) detail += ' · ' + lines.join(' · ')
+      results.push({
+        game: 'jopok', winners: jopokWinner ? [jopokWinner] : [], loserPays: 0,
+        carry: !jopokWinner, carryTotal: 0, detail,
+      })
+    }
+
+    // 버디값 계산 (지갑↔지갑, 같은 팀 제외 옵션). 조폭 진행 시 정액 버디값은 미적용.
+    if (buddyCfg?.enabled && (buddyCfg.buddyValue ?? 0) > 0 && !jopokCfg) {
       const bVal = buddyCfg.buddyValue
       const makers = holePlayers.filter(id => {
         const s = scores[id]
@@ -791,6 +851,14 @@ export function calcAllResults(room: Room): {
     }
 
     holeResults[h] = results
+  }
+
+  // 조폭 누적 보유금을 지갑·손익에 반영 (스킨은 은행 부담, 반납·강탈은 플레이어 간 이동)
+  if (jopokCfg) {
+    for (const pid of playerIds) {
+      walletGains[pid] += jopokHold[pid]
+      gameDeltas[pid]  += jopokHold[pid]
+    }
   }
 
   // 신페리오 (라운드 완료 시) — 지갑·정산과 분리, 플레이어간 별도 정산

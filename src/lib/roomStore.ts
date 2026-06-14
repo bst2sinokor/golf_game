@@ -61,6 +61,7 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
     teamCarryKeep: true,
     teamAssign: 'random',
     husseinMode: '134',
+    jopokPenalty: 'double',
   }
 
   const room: Room = {

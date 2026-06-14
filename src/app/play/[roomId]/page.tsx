@@ -112,7 +112,8 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
     if (r) {
       const name = room.players[r.id]?.name ?? '?'
       const allyCount = Object.keys(room.players).length - 1
-      const opp = (room.config.husseinMode ?? '134') === '13' ? Math.min(2, allyCount) : allyCount
+      // 13 모드: 그 홀 최하위 연합군 1명 제외 → 비교 상대 = 연합군−1
+      const opp = (room.config.husseinMode ?? '134') === '13' ? allyCount - 1 : allyCount
       return { text: `${name} 1:${Math.max(1, opp)}`, unresolved: false, ai: r.ai }
     }
     return { text: '미정', unresolved: true }
@@ -148,6 +149,7 @@ const GAME_TAG_STYLE: Record<string, string> = {
   'hussein':      '#dc2626',
   'lasvegas':     '#d97706',
   'sinperio':     '#64748b',
+  'jopok':        '#334155',
 }
 
 // 버튼 그리드 정의 (par3: TRIPLE·QUAD 제외 / par4: QUAD 제외)

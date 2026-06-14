@@ -1,4 +1,4 @@
-export type GameType = 'stroke' | 'team-match' | 'jootanwootan' | 'hussein' | 'sinperio' | 'scratch' | 'lasvegas'
+export type GameType = 'stroke' | 'team-match' | 'jootanwootan' | 'hussein' | 'sinperio' | 'scratch' | 'lasvegas' | 'jopok'
 
 export const GAME_LABELS: Record<GameType, string> = {
   stroke: '스킨스',
@@ -8,6 +8,7 @@ export const GAME_LABELS: Record<GameType, string> = {
   sinperio: '신페리오 핸디캡',
   scratch: '스크레치',
   lasvegas: '라스베가스',
+  jopok: '조폭 스킨스',
 }
 
 export interface PlayerConfig {
@@ -58,6 +59,7 @@ export interface RoomConfig {
   teamCarryKeep?: boolean  // 팀게임 무승부 이월 시 다음 홀에 팀 유지 (true=유지, false=재구성, 기본 재구성)
   teamAssign?: 'host' | 'random'  // 팀/역할 미정 시 배정 방식 (host=진행자 지정, random=A.I 랜덤, 기본 random)
   husseinMode?: '134' | '13'  // 후세인 대결 방식 (134=2등 vs 1·3·4등, 13=2등 vs 1·3등, 기본 134)
+  jopokPenalty?: 'double' | 'par3strict'  // 조폭 반납 강도 (double=더블50/트리플100 전홀, par3strict=파3만 한 단계 엄격, 기본 double)
 }
 
 export interface OecdEvents {
@@ -88,7 +90,7 @@ export interface Room {
   playerOrder?: string[]   // 진행자가 지정한 플레이어 표시 순서 (player id 배열)
   config: RoomConfig
   holes: Record<number, HoleData>
-  sinperioHoles: number[]  // 신페리오용 무작위 선정 6홀
+  sinperioHoles: number[]  // 신페리오용 선정 12홀 (전반 6 + 후반 6, 파 대표 선정)
   teeOrder?: string[]      // 1번홀 티샷 순서 (게임 시작 시 랜덤 생성)
   currentHole: number
   createdAt: number
