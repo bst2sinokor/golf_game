@@ -69,7 +69,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
     ...( room.config.longest ?? { enabled: false, holes: [], amount: 10000 })
   }))
   const [teamCarryKeep, setTeamCarryKeep] = useState(room.config.teamCarryKeep ?? true)
-  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>(room.config.teamAssign ?? 'host')
+  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>(room.config.teamAssign ?? 'random')
   const [husseinMode, setHusseinMode] = useState<'134' | '13'>(room.config.husseinMode ?? '134')
   const [betSteps, setBetSteps] = useState<Record<string, number>>({})
   const [amountStep, setAmountStep] = useState(100000)

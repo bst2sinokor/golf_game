@@ -56,7 +56,7 @@ export interface RoomConfig {
   longest?: EventConfig    // 롱기스트
   courseNames?: { club: string; front: string; back: string }  // 골프장·전반/후반 코스명
   teamCarryKeep?: boolean  // 팀게임 무승부 이월 시 다음 홀에 팀 유지 (true=유지, false=재구성, 기본 재구성)
-  teamAssign?: 'host' | 'random'  // 팀/역할 미정 시 배정 방식 (host=진행자 지정, random=A.I 랜덤, 기본 host)
+  teamAssign?: 'host' | 'random'  // 팀/역할 미정 시 배정 방식 (host=진행자 지정, random=A.I 랜덤, 기본 random)
   husseinMode?: '134' | '13'  // 후세인 대결 방식 (134=2등 vs 1·3·4등, 13=2등 vs 1·3등, 기본 134)
 }
 

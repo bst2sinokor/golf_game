@@ -228,7 +228,7 @@ export function resolveHussein(room: Room, hole: number): { id: string; ai: bool
   if (room.holes[hole]?.husseinPlayerId) return { id: room.holes[hole].husseinPlayerId!, ai: false }
   const rank = findFullRanking(room, hole)
   if (rank && rank.length >= 4) return { id: rank[1], ai: false }
-  if (room.config.teamAssign === 'random') {
+  if ((room.config.teamAssign ?? 'random') === 'random') {
     const ids = Object.keys(room.players).sort()
     if (ids.length >= 4) return { id: seededShuffle(ids, hashStr(room.id + ':hs:' + hole))[0], ai: true }
   }
@@ -240,7 +240,7 @@ export function resolveLasvegasTeamA(room: Room, hole: number): { teamA: string[
   if (room.holes[hole]?.lasvegasTeamA) return { teamA: room.holes[hole].lasvegasTeamA!, ai: false }
   const rank = findFullRanking(room, hole)
   if (rank && rank.length >= 4) return { teamA: [rank[0], rank[3]], ai: false }
-  if (room.config.teamAssign === 'random') {
+  if ((room.config.teamAssign ?? 'random') === 'random') {
     const ids = Object.keys(room.players).sort()
     if (ids.length >= 4) {
       const o = seededShuffle(ids, hashStr(room.id + ':lv:' + hole))

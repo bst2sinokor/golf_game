@@ -61,7 +61,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   // 팀게임 이월 시 팀 유지 여부 (기본 팀 유지)
   const [teamCarryKeep, setTeamCarryKeep] = useState(true)
   // 팀/역할 미정 시 배정 방식 (기본 진행자 배정)
-  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>('host')
+  const [teamAssign, setTeamAssign] = useState<'host' | 'random'>('random')
   // 후세인 대결 방식 (기본 1·3·4등)
   const [husseinMode, setHusseinMode] = useState<'134' | '13'>('134')
   // 게임 상세 설명 팝업
