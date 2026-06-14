@@ -12,7 +12,7 @@ const GAME_DESC: Record<GameType, string> = {
   stroke:       '홀별 최저 타수 승자가 판돈 획득',
   'team-match': '사전 팀 구성, 홀별 팀 합산 타수 비교',
   jootanwootan: '티샷 방향(좌/우)으로 매 홀 팀 구성',
-  hussein:      '직전 홀 2등 vs 나머지 대결 (1·3·4등 / 1·3등 선택)',
+  hussein:      '직전 홀 2등(후세인) vs 연합군 대결(3명 또는 상위 2명)',
   lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
   sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
@@ -426,7 +426,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     <div className="card" style={{ marginTop: 8, background: 'var(--bg)' }}>
                       <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>벌칙(반납) 강도</p>
                       <div style={{ display: 'flex', gap: 5 }}>
-                        {[{ v: 'double' as const, l: '더블50 / 트리플+100' }, { v: 'par3strict' as const, l: '파3만 한 단계 엄격' }].map(({ v, l }) => (
+                        {[{ v: 'double' as const, l: '더블50% / 트리플100%' }, { v: 'par3strict' as const, l: '기본+파3만 한단계 엄격' }].map(({ v, l }) => (
                           <button key={v} onClick={() => setJopokPenalty(v)} style={{
                             flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
                             border: '1px solid var(--border)',
