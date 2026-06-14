@@ -178,7 +178,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
 
   // ── 렌더 ──
   const STEP_LABELS: Record<SettingsStep, string> = {
-    players: '플레이어', pars: '코스설정', games: '게임선택', money: '금액설정', oecd: '기타',
+    players: '플레이어', pars: '코스설정', oecd: '기본설정', games: '게임선택', money: '금액설정',
   }
 
   return (
@@ -393,6 +393,69 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               )}
             </div>
           ))}
+
+          {/* 니어·롱기스트 설정 */}
+          {([
+            { key: 'nearest' as const, label: '니어리스트', cfg: nearest, setCfg: setNearest },
+            { key: 'longest' as const, label: '롱기스트',   cfg: longest, setCfg: setLongest },
+          ]).map(({ key, label, cfg, setCfg }) => (
+            <div key={key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontWeight: 700 }}>{label} 설정</p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>당첨자가 설정 금액 획득 (진행자가 홀에서 선택)</p>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={cfg.enabled}
+                    onChange={e => setCfg(prev => ({ ...prev, enabled: e.target.checked }))} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>활성화</span>
+                </label>
+              </div>
+              {cfg.enabled && (
+                <>
+                  <div className="divider" />
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>적용 홀</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
+                        const sel = cfg.holes.includes(h)
+                        return (
+                          <button key={h} onClick={() => setCfg(prev => ({
+                            ...prev,
+                            holes: prev.holes.includes(h) ? prev.holes.filter(x => x !== h) : [...prev.holes, h].sort((a, b) => a - b),
+                          }))} style={{
+                            width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
+                            fontWeight: 700, fontSize: 13,
+                            background: sel ? '#d97706' : 'var(--border)',
+                            color: sel ? '#fff' : 'var(--muted)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                          }}>
+                            <span>{h}</span>
+                            <span style={{ height: 6, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {holePars[h - 1] === 3 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />}
+                              {holePars[h - 1] === 5 && <span style={{ width: 14, height: 3, borderRadius: 2, background: 'currentColor' }} />}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>당첨 금액 (원)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="text" inputMode="numeric"
+                        value={cfg.amount === 0 ? '' : cfg.amount.toLocaleString()}
+                        onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setCfg(prev => ({ ...prev, amount: raw === '' ? 0 : Number(raw) })) }}
+                        onFocus={e => e.target.select()}
+                        style={{ flex: 1, minWidth: 0 }} />
+                      <button onClick={() => setCfg(prev => ({ ...prev, amount: Math.max(0, prev.amount - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+                      <button onClick={() => setCfg(prev => ({ ...prev, amount: prev.amount + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -543,9 +606,25 @@ export default function GameSettings({ room, roomId, myId }: Props) {
         </div>
       )}
 
-      {/* ⑤ 기타 (OECD + 버디설정) */}
+      {/* ⑤ 기본설정 (OECD + 버디설정) */}
       {step === 'oecd' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* 기본금액 분배 설정 (버디와 독립) */}
+          <div className="card">
+            <p style={{ fontWeight: 700, marginBottom: 2 }}>기본금액 분배</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>첫 홀 시작 시 각 플레이어 지갑에 지급 (0 = 미적용)</p>
+            <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>분배 금액 (원/인)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="text" inputMode="numeric"
+                value={(buddy.baseDistribution ?? 0) === 0 ? '' : buddy.baseDistribution.toLocaleString()}
+                onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setBuddy(prev => ({ ...prev, baseDistribution: raw === '' ? 0 : Number(raw) })) }}
+                onFocus={e => e.target.select()}
+                style={{ flex: 1, minWidth: 0 }} />
+              <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: Math.max(0, (prev.baseDistribution ?? 0) - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
+              <button onClick={() => setBuddy(prev => ({ ...prev, baseDistribution: (prev.baseDistribution ?? 0) + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
+            </div>
+          </div>
 
           {/* OECD */}
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -563,6 +642,22 @@ export default function GameSettings({ room, roomId, myId }: Props) {
             {oecd.enabled && (
               <>
                 <div className="divider" />
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>18홀(마지막홀) OECD</label>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {[{ v: true, l: '해제' }, { v: false, l: '유지' }].map(({ v, l }) => (
+                      <button key={l} onClick={() => setOecd(prev => ({ ...prev, lastHoleRelease: v }))} style={{
+                        flex: 1, padding: '8px 2px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                        border: '1px solid var(--border)',
+                        background: (oecd.lastHoleRelease ?? true) === v ? 'var(--blue)' : 'var(--bg)',
+                        color: (oecd.lastHoleRelease ?? true) === v ? '#fff' : 'var(--muted)',
+                      }}>{l}</button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
+                    해제 시 18홀에서는 OECD 페널티가 적용되지 않습니다
+                  </p>
+                </div>
                 {[
                   { key: 'threshold',       label: 'OECD 가입 기준 (원)'   },
                   { key: 'penaltyPerEvent', label: '이벤트당 페널티 (원)'   },
@@ -598,13 +693,12 @@ export default function GameSettings({ room, roomId, myId }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ fontWeight: 700 }}>버디값 설정</p>
-                <p style={{ fontSize: 12, color: 'var(--muted)' }}>기본금액 분배 및 버디 보너스</p>
+                <p style={{ fontSize: 12, color: 'var(--muted)' }}>버디 달성 시 보너스</p>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={buddy.enabled}
                   onChange={e => setBuddy(prev => ({
                     ...prev, enabled: e.target.checked,
-                    baseDistribution: e.target.checked && !prev.baseDistribution ? 10000 : prev.baseDistribution,
                     buddyValue: e.target.checked && !prev.buddyValue ? 10000 : prev.buddyValue,
                   }))} />
                 <span style={{ fontSize: 14, fontWeight: 600 }}>활성화</span>
@@ -630,7 +724,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                   </p>
                 </div>
                 {([
-                  { key: 'baseDistribution', label: '기본금액 분배 (원/인)', desc: '첫 홀 시작 시 각 플레이어에게 지급' },
                   { key: 'buddyValue',        label: '버디값 (원/인)',         desc: '버디 달성 시 나머지 플레이어 각 인당 지급' },
                 ] as { key: keyof BuddyConfig; label: string; desc: string }[]).map(({ key, label, desc }) => {
                   const val    = buddy[key] as number
@@ -654,69 +747,6 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               </>
             )}
           </div>
-
-          {/* 니어·롱기스트 설정 */}
-          {([
-            { key: 'nearest' as const, label: '니어리스트', cfg: nearest, setCfg: setNearest },
-            { key: 'longest' as const, label: '롱기스트',   cfg: longest, setCfg: setLongest },
-          ]).map(({ key, label, cfg, setCfg }) => (
-            <div key={key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <p style={{ fontWeight: 700 }}>{label} 설정</p>
-                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>당첨자가 설정 금액 획득 (진행자가 홀에서 선택)</p>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={cfg.enabled}
-                    onChange={e => setCfg(prev => ({ ...prev, enabled: e.target.checked }))} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>활성화</span>
-                </label>
-              </div>
-              {cfg.enabled && (
-                <>
-                  <div className="divider" />
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>적용 홀</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
-                        const sel = cfg.holes.includes(h)
-                        return (
-                          <button key={h} onClick={() => setCfg(prev => ({
-                            ...prev,
-                            holes: prev.holes.includes(h) ? prev.holes.filter(x => x !== h) : [...prev.holes, h].sort((a, b) => a - b),
-                          }))} style={{
-                            width: 36, height: 36, borderRadius: 8, border: 'none', cursor: 'pointer',
-                            fontWeight: 700, fontSize: 13,
-                            background: sel ? '#d97706' : 'var(--border)',
-                            color: sel ? '#fff' : 'var(--muted)',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                          }}>
-                            <span>{h}</span>
-                            <span style={{ height: 6, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {holePars[h - 1] === 3 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />}
-                              {holePars[h - 1] === 5 && <span style={{ width: 14, height: 3, borderRadius: 2, background: 'currentColor' }} />}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', display: 'block', marginBottom: 6 }}>당첨 금액 (원)</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input type="text" inputMode="numeric"
-                        value={cfg.amount === 0 ? '' : cfg.amount.toLocaleString()}
-                        onChange={e => { const raw = e.target.value.replace(/,/g, '').replace(/\D/g, ''); setCfg(prev => ({ ...prev, amount: raw === '' ? 0 : Number(raw) })) }}
-                        onFocus={e => e.target.select()}
-                        style={{ flex: 1, minWidth: 0 }} />
-                      <button onClick={() => setCfg(prev => ({ ...prev, amount: Math.max(0, prev.amount - 5000) }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>−</button>
-                      <button onClick={() => setCfg(prev => ({ ...prev, amount: prev.amount + 5000 }))} style={{ width: 34, height: 40, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', cursor: 'pointer', fontSize: 18, fontWeight: 700, color: 'var(--muted)', flexShrink: 0 }}>+</button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
         </div>
       )}
 

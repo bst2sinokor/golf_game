@@ -28,6 +28,7 @@ export interface GameConfig {
 
 export interface OecdConfig {
   enabled: boolean
+  lastHoleRelease?: boolean // 18홀(마지막홀)에서 OECD 해제 여부 (true=해제, false=유지, 기본 해제)
   threshold: number        // OECD 가입 기준 (내 보유액: 기본분배 + 승리금 + 버디 손익 − 페널티)
   penaltyPerEvent: number  // 이벤트당 페널티
   maxPerHole: number       // 홀당 페널티 상한

@@ -45,6 +45,7 @@ export async function createRoom(hostName: string): Promise<{ roomId: string; pl
     games: [],
     oecd: {
       enabled: false,
+      lastHoleRelease: true,
       threshold: 60000,
       penaltyPerEvent: 10000,
       maxPerHole: 20000,

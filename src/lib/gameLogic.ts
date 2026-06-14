@@ -514,7 +514,7 @@ export function calcAllResults(room: Room): {
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
-  const baseDistribution = (buddyCfg?.enabled ? (buddyCfg.baseDistribution ?? 0) : 0)
+  const baseDistribution = buddyCfg?.baseDistribution ?? 0  // 버디 활성화와 무관하게 적용
 
   // 게임별 이월 추적
   const carryMap: Record<string, number> = {}
@@ -662,8 +662,10 @@ export function calcAllResults(room: Room): {
       if (playerIds.length > 1 && oecdMembers.size >= playerIds.length - 1) {
         for (const pid of playerIds) oecdMembers.add(pid)
       }
-      // 3) 페널티 적용 (OECD 회원 + 수익 > 0)
+      // 3) 페널티 적용 (OECD 회원 + 수익 > 0). 18홀 해제 옵션 시 마지막 홀은 페널티 없음
+      const lastHoleReleased = h === 18 && (oecdCfg.lastHoleRelease ?? true)
       for (const pid of playerIds) {
+        if (lastHoleReleased) break
         if (!oecdMembers.has(pid)) continue
         const events = holeData.oecd?.[pid]
         const running = baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
