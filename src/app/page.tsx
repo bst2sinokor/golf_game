@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRoom, joinRoom } from '@/lib/roomStore'
+import HowToModal from '@/components/HowToModal'
 
 export default function Home() {
   const router = useRouter()
@@ -10,6 +11,7 @@ export default function Home() {
   const [roomCode, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState('')
+  const [showHowTo, setShowHowTo] = useState(false)
 
   async function handleCreate() {
     if (!name.trim()) return setError('이름을 입력하세요.')
@@ -48,6 +50,17 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+      {/* 사용방법 버튼 (좌측 상단) */}
+      <button onClick={() => setShowHowTo(true)} style={{
+        position: 'fixed', top: 14, left: 14, zIndex: 50,
+        padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
+        border: 'none', background: 'var(--red)',
+        fontSize: 13, fontWeight: 700, color: '#fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,.12)',
+      }}>사용방법</button>
+
+      {showHowTo && <HowToModal onClose={() => setShowHowTo(false)} />}
+
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* 헤더 */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>

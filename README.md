@@ -16,16 +16,18 @@
 106-golf-game/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx               # 첫 화면 (방 만들기 / 방 참가하기)
+│   │   ├── page.tsx               # 첫 화면 (방 만들기 / 방 참가하기 + 좌측 상단 [사용방법])
 │   │   ├── layout.tsx             # 루트 레이아웃, viewport 설정
 │   │   ├── globals.css            # 전역 스타일, 애니메이션 (livePulse, waitBlink)
 │   │   ├── setup/[roomId]/        # 진행자 게임 설정 (코스→기본→게임선택→금액→시작)
 │   │   ├── play/[roomId]/         # 메인 플레이 화면 (스코어보드, 점수 입력)
 │   │   └── result/[roomId]/       # 최종 정산 결과
 │   ├── components/
-│   │   └── GameSettings.tsx       # 게임 중 설정 변경 (플레이어 관리 포함)
+│   │   ├── GameSettings.tsx       # 게임 중 설정 변경 (플레이어 관리 포함)
+│   │   └── HowToModal.tsx         # 사용방법 가이드 (진행자/참여자/게임 룰/공통 규칙)
 │   └── lib/
 │       ├── firebase.ts            # Firebase 초기화 (환경변수 기반)
+│       ├── gameInfo.ts            # 게임별 상세 룰·옵션 설명 (GAME_DETAIL, (?) 팝업·사용방법 공용)
 │       ├── roomStore.ts           # Firestore CRUD (방 생성/참가/구독/정리)
 │       ├── gameLogic.ts           # 정산 계산 엔진 (calcAllResults)
 │       └── types.ts               # 타입 정의 (Room, GameConfig, PlayerTotals 등)
