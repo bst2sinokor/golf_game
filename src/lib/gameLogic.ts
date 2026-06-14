@@ -591,6 +591,9 @@ export function calcAllResults(room: Room): {
     const holePar  = room.config.holePars[h - 1] ?? 4
     const scores   = holeData.scores ?? {}
     const results: HoleGameResult[] = []
+    // 이 홀에 실제로 점수를 입력한 플레이어만 참여 (중간 참여자는 합류 전 홀의 정산·버디·OECD에서 제외)
+    const holePlayers = playerIds.filter(id => scores[id] != null)
+    const holeRoom: Room = { ...room, players: Object.fromEntries(holePlayers.map(id => [id, room.players[id]])) }
 
     for (const cfg of room.config.games) {
       if (!cfg.holes.includes(h)) continue
@@ -617,9 +620,9 @@ export function calcAllResults(room: Room): {
       } else if (cfg.type === 'jootanwootan') {
         result = calcJootanwootan(scores, holeData.jootanwootan ?? {}, cfg, 0, override)
       } else if (cfg.type === 'hussein') {
-        result = calcHussein(h, scores, cfg, room, 0)
+        result = calcHussein(h, scores, cfg, holeRoom, 0)
       } else if (cfg.type === 'lasvegas') {
-        result = calcLasvegas(h, scores, cfg, room, 0, override)
+        result = calcLasvegas(h, scores, cfg, holeRoom, 0, override)
       }
 
       if (result) {
@@ -629,7 +632,7 @@ export function calcAllResults(room: Room): {
             const [a, b] = r.teams
             return r.carryTotal * Math.max(1, Math.round((a.length + b.length) / 2))
           }
-          if (cfg.type === 'hussein') return r.carryTotal * Math.max(1, playerIds.length - 1)
+          if (cfg.type === 'hussein') return r.carryTotal * Math.max(1, holePlayers.length - 1)
           return r.carryTotal  // 스트로크: 승자 상금 = 설정금액
         }
 
@@ -651,7 +654,7 @@ export function calcAllResults(room: Room): {
           }
           carry = 0; carryType = null; carryTeams = null
 
-          const losers = playerIds.filter(id => !result!.winners.includes(id))
+          const losers = holePlayers.filter(id => !result!.winners.includes(id))
           for (const wid of result.winners) {
             // 스트로크: 승자는 홀당 설정금액만 수령. 그 외 게임: 패자 수 비례 수령
             const gain = cfg.type === 'stroke'
@@ -701,7 +704,7 @@ export function calcAllResults(room: Room): {
     // 버디값 계산 (지갑↔지갑, 같은 팀 제외 옵션)
     if (buddyCfg?.enabled && (buddyCfg.buddyValue ?? 0) > 0) {
       const bVal = buddyCfg.buddyValue
-      const makers = playerIds.filter(id => {
+      const makers = holePlayers.filter(id => {
         const s = scores[id]
         return s != null && s <= holePar - 1
       })
@@ -716,7 +719,7 @@ export function calcAllResults(room: Room): {
         const holeGains: Record<string, number> = {}
         const holeCount: Record<string, number> = {}  // 각 버디 메이커가 받은 인원 수
         for (const maker of makers) { holeGains[maker] = 0; holeCount[maker] = 0 }
-        for (const pid of playerIds) {
+        for (const pid of holePlayers) {
           if (makers.includes(pid)) continue  // 버디한 사람끼리는 주고받지 않음
           for (const maker of makers) {
             if (!fromTeammates && isTeammate(maker, pid)) continue  // 같은 팀 제외
@@ -756,17 +759,17 @@ export function calcAllResults(room: Room): {
     const oecdCfg = room.config.oecd
     if (oecdCfg.enabled) {
       // 1) 임계값 도달 시 가입 (내 보유액 = 기본분배 + 승리금 + 버디 손익 − 페널티)
-      for (const pid of playerIds) {
+      for (const pid of holePlayers) {
         const running = baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         if (running >= oecdCfg.threshold && running > 0) oecdMembers.add(pid)
       }
       // 2) 자동 가입: 전체 인원 중 1명만 남았으면 그 1명도 자동 가입
-      if (playerIds.length > 1 && oecdMembers.size >= playerIds.length - 1) {
-        for (const pid of playerIds) oecdMembers.add(pid)
+      if (holePlayers.length > 1 && oecdMembers.size >= holePlayers.length - 1) {
+        for (const pid of holePlayers) oecdMembers.add(pid)
       }
       // 3) 페널티 적용 (OECD 회원 + 수익 > 0). 18홀 해제 옵션 시 마지막 홀은 페널티 없음
       const lastHoleReleased = h === 18 && (oecdCfg.lastHoleRelease ?? true)
-      for (const pid of playerIds) {
+      for (const pid of holePlayers) {
         if (lastHoleReleased) break
         if (!oecdMembers.has(pid)) continue
         const events = holeData.oecd?.[pid]

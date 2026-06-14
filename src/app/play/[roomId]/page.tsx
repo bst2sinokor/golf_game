@@ -98,7 +98,7 @@ function resolveNames(detail: string, players: Room['players']): string {
 }
 
 // 홀 적용 게임의 팀 구성 표시 (null = 결정 불가)
-function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string; unresolved: boolean } | null {
+function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string; unresolved: boolean; ai?: boolean } | null {
   if (g.type === 'team-match') {
     const t1 = g.teams?.team1 ?? []
     const t2 = g.teams?.team2 ?? []
@@ -113,7 +113,7 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
       const name = room.players[r.id]?.name ?? '?'
       const allyCount = Object.keys(room.players).length - 1
       const opp = (room.config.husseinMode ?? '134') === '13' ? Math.min(2, allyCount) : allyCount
-      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} 1:${Math.max(1, opp)}`, unresolved: false }
+      return { text: `${name} 1:${Math.max(1, opp)}`, unresolved: false, ai: r.ai }
     }
     return { text: '미정', unresolved: true }
   }
@@ -123,7 +123,7 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
       const tB = Object.keys(room.players).filter(id => !r.teamA.includes(id))
       const a = r.teamA.map(id => room.players[id]?.name ?? '?').join('+')
       const b = tB.map(id => room.players[id]?.name ?? '?').join('+')
-      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${a} vs ${b}`, unresolved: false }
+      return { text: `${a} vs ${b}`, unresolved: false, ai: r.ai }
     }
     return { text: '미정', unresolved: true }
   }
@@ -633,7 +633,12 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                           </span>
                         </span>
                       ) : (
-                        <FitText text={td.text} color="var(--text)" fontWeight={700} />
+                        <>
+                          {td.ai && (
+                            <span style={{ fontSize: 13, fontWeight: 800, color: '#dc2626', flexShrink: 0, whiteSpace: 'nowrap' }}>A.I 배정 </span>
+                          )}
+                          <FitText text={td.text} color="var(--text)" fontWeight={700} />
+                        </>
                       )
                     )}
                     {td?.unresolved && (
