@@ -637,7 +637,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                       ) : (
                         <>
                           {td.ai && (
-                            <span style={{ fontSize: 13, fontWeight: 800, color: '#dc2626', flexShrink: 0, whiteSpace: 'nowrap' }}>A.I 배정 </span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: '#dc2626', flexShrink: 0, whiteSpace: 'nowrap', animation: 'waitBlink 1s ease-in-out infinite' }}>A.I 배정 </span>
                           )}
                           <FitText text={td.text} color="var(--text)" fontWeight={700} />
                         </>

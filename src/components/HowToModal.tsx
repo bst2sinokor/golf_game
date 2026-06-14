@@ -5,6 +5,17 @@ import { GAME_DETAIL } from '@/lib/gameInfo'
 
 const GAME_ORDER: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
 
+// 게임별 강조 색 (플레이 화면 태그 색과 동일 계열)
+const GAME_COLOR: Record<GameType, string> = {
+  stroke: '#16a34a',
+  lasvegas: '#d97706',
+  'team-match': '#2563eb',
+  jootanwootan: '#7c3aed',
+  hussein: '#dc2626',
+  scratch: '#0891b2',
+  sinperio: '#64748b',
+}
+
 const HOST_GUIDE = `진행자는 '방을 만들고 게임을 정하는 사람'이에요. 보통 총무가 맡아요.
 
 [1] 방 만들기
@@ -13,25 +24,18 @@ const HOST_GUIDE = `진행자는 '방을 만들고 게임을 정하는 사람'�
 • 이 번호를 같이 치는 친구들에게 알려주면, 친구들이 폰으로 들어와요.
 
 [2] 게임 정하기 (위쪽 탭을 차례로 눌러요)
-① 코스설정
-   - 어느 골프장에서 치는지, 전반/후반 코스 이름을 적고 [확정]을 눌러요.
-   - 그러면 홀마다 기준 타수(파)가 자동으로 채워져요. (없으면 직접 골라요)
-② 기본설정
-   - 시작할 때 각자에게 똑같이 나눠줄 '기본 돈'과 몇 가지 규칙을 정해요.
-   - 잘 모르겠으면 그대로 두고 넘어가도 괜찮아요.
-③ 게임선택
-   - 어떤 내기 게임을 할지 고르고, 몇 번 홀에서 할지, 얼마를 걸지 정해요.
-   - 게임 이름 옆 (?)를 누르면 그 게임 설명이 나와요.
-④ 금액설정
-   - 각자 낼 돈을 적고 [게임 시작]을 누르면 시작!
+① 코스설정 — 골프장·전반/후반 코스를 적고 [확정]. 홀마다 기준 타수(파)가 자동으로 채워져요.
+② 기본설정 — 시작할 때 나눠줄 '기본 돈'과 규칙을 정해요. 잘 모르면 그대로 둬도 괜찮아요.
+③ 게임선택 — 어떤 게임을, 몇 번 홀에서, 얼마에 할지 골라요. 이름 옆 (?)로 설명을 볼 수 있어요.
+④ 금액설정 — 각자 낼 돈을 적고 [게임 시작]을 누르면 시작!
 
 [3] 게임 중
-• 점수표에서 칸을 누르면 그 사람·그 홀의 타수를 넣을 수 있어요. (진행자는 모두 입력 가능)
-• 한 홀의 전원이 점수를 다 넣으면 결과가 나와요 → [다음 홀]을 눌러 넘어가요.
+• 점수표 칸을 누르면 그 사람·그 홀의 타수를 넣어요. (진행자는 모두 입력 가능)
+• 한 홀의 전원이 점수를 다 넣으면 결과가 나와요 → [다음 홀]로 넘어가요.
 • 홀을 넘기는 건 진행자만 할 수 있어요.
 
 [4] 그 밖에
-• 화면 위쪽: 왼쪽엔 방 코드, 오른쪽엔 돈(총납부금 ↔ 내 보유)을 눌러 바꿔 볼 수 있어요.
+• 화면 위쪽: 왼쪽엔 방 코드, 오른쪽엔 돈(총납부금 ↔ 내 보유)을 눌러 바꿔 봐요.
 • 게임 도중에도 ≡ 메뉴에서 사람 추가·순서 변경, 설정 변경이 가능해요.
 
 [5] 끝나면
@@ -83,6 +87,115 @@ const COMMON_GUIDE = `돈이 어떻게 늘고 주는지 쉽게 알려드릴게�
 【니어리스트 / 롱기스트】
 • 정해진 홀에서 핀에 가장 가깝게(니어) 또는 가장 멀리(롱기) 친 사람이 상금을 받아요.`
 
+// ── 텍스트를 디자인 요소로 렌더링 ──
+const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩'
+
+function GuideBody({ text, accent }: { text: string; accent: string }) {
+  const lines = text.split('\n')
+  const nodes: React.ReactNode[] = []
+  let introDone = false
+
+  lines.forEach((raw, i) => {
+    const line = raw.replace(/\s+$/, '')
+    const trimmed = line.trim()
+    if (trimmed === '') { nodes.push(<div key={i} style={{ height: 6 }} />); return }
+
+    // 【섹션 헤더】
+    const mHead = trimmed.match(/^【(.+)】$/)
+    if (mHead) {
+      nodes.push(
+        <div key={i} style={{
+          display: 'inline-block', margin: '12px 0 6px', padding: '3px 11px', borderRadius: 7,
+          background: accent + '1f', color: accent, fontSize: 13, fontWeight: 800, letterSpacing: '.2px',
+        }}>{mHead[1]}</div>
+      )
+      return
+    }
+
+    // [n] 단계
+    const mStep = trimmed.match(/^\[(\d+)\]\s*(.+)$/)
+    if (mStep) {
+      nodes.push(
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, margin: '14px 0 7px' }}>
+          <span style={{
+            flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: accent, color: '#fff',
+            fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}>{mStep[1]}</span>
+          <span style={{ fontSize: 15, fontWeight: 800 }}>{mStep[2]}</span>
+        </div>
+      )
+      return
+    }
+
+    // ①②③④ 하위 단계
+    if (CIRCLED.includes(trimmed[0])) {
+      const rest = trimmed.slice(1).trim().replace(/^—\s*/, '')
+      nodes.push(
+        <div key={i} style={{ display: 'flex', gap: 7, margin: '7px 0 2px', alignItems: 'baseline' }}>
+          <span style={{ flexShrink: 0, color: accent, fontWeight: 800, fontSize: 14 }}>{trimmed[0]}</span>
+          <span style={{ fontSize: 13, lineHeight: 1.55 }}>{rest}</span>
+        </div>
+      )
+      return
+    }
+
+    // • 불릿 (' / ' 포함 시 칩으로)
+    if (trimmed.startsWith('•')) {
+      const body = trimmed.slice(1).trim()
+      if (body.includes(' / ')) {
+        nodes.push(
+          <div key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '3px 0 3px 4px' }}>
+            {body.split(' / ').map((c, k) => (
+              <span key={k} style={{
+                padding: '3px 9px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                background: accent + '14', color: accent, border: `1px solid ${accent}33`,
+              }}>{c.trim()}</span>
+            ))}
+          </div>
+        )
+        return
+      }
+      nodes.push(
+        <div key={i} style={{ display: 'flex', gap: 8, margin: '3px 0', alignItems: 'baseline' }}>
+          <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: accent, transform: 'translateY(-2px)' }} />
+          <span style={{ fontSize: 13, lineHeight: 1.6, flex: 1, minWidth: 0 }}>{body}</span>
+        </div>
+      )
+      return
+    }
+
+    // 들여쓰기 — 예시/보조설명 콜아웃
+    if (/^\s/.test(line)) {
+      const c = trimmed.replace(/^-\s*/, '')
+      const isExample = trimmed.startsWith('예)') || /^\s*예\)/.test(line)
+      nodes.push(
+        <div key={i} style={{
+          margin: '2px 0 2px 16px', padding: '4px 10px', borderRadius: 6,
+          background: isExample ? '#fffbeb' : '#f8fafc',
+          borderLeft: `3px solid ${isExample ? '#f59e0b' : 'var(--border)'}`,
+          fontSize: 12, lineHeight: 1.55, color: 'var(--muted)',
+        }}>{c}</div>
+      )
+      return
+    }
+
+    // 그 외 — 첫 줄은 인트로 박스, 나머지는 일반 문단
+    if (!introDone) {
+      introDone = true
+      nodes.push(
+        <div key={i} style={{
+          padding: '10px 12px', borderRadius: 10, background: accent + '12',
+          borderLeft: `4px solid ${accent}`, fontSize: 13.5, fontWeight: 600, lineHeight: 1.6, color: 'var(--text)',
+        }}>{trimmed}</div>
+      )
+      return
+    }
+    nodes.push(<p key={i} style={{ fontSize: 13, lineHeight: 1.6, margin: '4px 0' }}>{trimmed}</p>)
+  })
+
+  return <div>{nodes}</div>
+}
+
 type Section = 'host' | 'player' | 'games' | 'common'
 
 export default function HowToModal({ onClose }: { onClose: () => void }) {
@@ -101,51 +214,64 @@ export default function HowToModal({ onClose }: { onClose: () => void }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440,
-        maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0,0,0,.25)',
+        background: '#fff', borderRadius: 18, width: '100%', maxWidth: 440,
+        maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        boxShadow: '0 12px 40px rgba(0,0,0,.3)',
       }}>
         {/* 헤더 */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--green)',
+          padding: '16px 18px 14px', background: 'linear-gradient(135deg, #166534, #16a34a)', position: 'relative',
         }}>
-          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>사용방법</span>
           <button onClick={onClose} style={{
+            position: 'absolute', top: 12, right: 12,
             width: 28, height: 28, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: 'rgba(255,255,255,.25)', color: '#fff', fontSize: 16, fontWeight: 800, lineHeight: 1,
+            background: 'rgba(255,255,255,.22)', color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1,
           }}>✕</button>
+          <p style={{ fontSize: 19, fontWeight: 800, color: '#fff', margin: 0 }}>사용방법</p>
+          <p style={{ fontSize: 12.5, color: '#d1fae5', margin: '3px 0 0' }}>처음이어도 괜찮아요. 차근차근 따라 해 보세요!</p>
         </div>
 
         {/* 섹션 탭 */}
-        <div style={{ display: 'flex', gap: 4, padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: 4, padding: '10px 12px', borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
           {TABS.map(({ v, l }) => (
             <button key={v} onClick={() => setSection(v)} style={{
-              flex: 1, padding: '7px 2px', borderRadius: 7, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+              flex: 1, padding: '8px 2px', borderRadius: 8, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
               border: '1px solid var(--border)',
-              background: section === v ? 'var(--blue)' : 'var(--bg)',
+              background: section === v ? 'var(--blue)' : '#fff',
               color: section === v ? '#fff' : 'var(--muted)',
+              boxShadow: section === v ? '0 2px 6px rgba(37,99,235,.25)' : 'none',
             }}>{l}</button>
           ))}
         </div>
 
         {/* 본문 */}
-        <div style={{ padding: 16, overflowY: 'auto', fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}>
-          {section === 'host' && <pre style={preStyle}>{HOST_GUIDE}</pre>}
-          {section === 'player' && <pre style={preStyle}>{PLAYER_GUIDE}</pre>}
-          {section === 'common' && <pre style={preStyle}>{COMMON_GUIDE}</pre>}
+        <div style={{ padding: 16, overflowY: 'auto', color: 'var(--text)' }}>
+          {section === 'host' && <GuideBody text={HOST_GUIDE} accent="#16a34a" />}
+          {section === 'player' && <GuideBody text={PLAYER_GUIDE} accent="#2563eb" />}
+          {section === 'common' && <GuideBody text={COMMON_GUIDE} accent="#d97706" />}
           {section === 'games' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>
-                각 게임의 룰과 이 앱에 적용된 규칙·선택 옵션입니다.
+                각 게임의 룰과, 이 앱에 적용된 규칙·선택 옵션이에요.
               </p>
               {GAME_ORDER.map(g => (
-                <div key={g}>
-                  <p style={{
-                    fontSize: 15, fontWeight: 800, margin: '0 0 6px',
-                    paddingBottom: 4, borderBottom: '2px solid var(--green)', display: 'inline-block',
-                  }}>{GAME_LABELS[g]}</p>
-                  <pre style={preStyle}>{GAME_DETAIL[g]}</pre>
+                <div key={g} style={{
+                  border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden',
+                  borderLeft: `5px solid ${GAME_COLOR[g]}`,
+                }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
+                    background: GAME_COLOR[g] + '12',
+                  }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 7, background: GAME_COLOR[g], color: '#fff',
+                      fontSize: 12, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{GAME_LABELS[g][0]}</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: GAME_COLOR[g] }}>{GAME_LABELS[g]}</span>
+                  </div>
+                  <div style={{ padding: '8px 12px 12px' }}>
+                    <GuideBody text={GAME_DETAIL[g]} accent={GAME_COLOR[g]} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -154,9 +280,4 @@ export default function HowToModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
-}
-
-const preStyle: React.CSSProperties = {
-  whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit',
-  fontSize: 13, lineHeight: 1.7, margin: 0, color: 'var(--text)',
 }
