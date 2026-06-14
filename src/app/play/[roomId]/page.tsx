@@ -306,6 +306,11 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
     setShowResultPopup(true)
   }, [allEnteredSafe, eventsDoneSafe, viewHole, isHost])
 
+  // 진행자가 다음 홀로 넘어가면(viewHole 변경) 참가자 결과 팝업 닫기
+  useEffect(() => {
+    setShowResultPopup(false)
+  }, [viewHole])
+
   if (!room) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>로딩 중...</div>
   // 게임 종료 시 결과 화면으로 이동 (결과 화면에서 ?view=1로 돌아온 경우는 조회 허용)
   const viewOnly = typeof window !== 'undefined' && window.location.search.includes('view=1')
@@ -1016,10 +1021,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         </div>
       )}
 
-      {/* 참가자 결과 팝업 */}
+      {/* 참가자 결과 팝업 (진행자가 다음 홀로 넘어가면 자동으로 닫힘) */}
       {showResultPopup && !isHost && (
         <div
-          onClick={() => setShowResultPopup(false)}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)',
             zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1028,9 +1032,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360, overflow: 'hidden' }}
+            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360, overflow: 'hidden', border: '2px solid #dc2626' }}
           >
-            <div style={{ background: '#1e293b', padding: '12px 16px' }}>
+            <div style={{ background: '#dc2626', padding: '12px 16px' }}>
               <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '.3px' }}>Hole {viewHole} 결과</span>
             </div>
             <div style={{ padding: '12px 16px' }}>
@@ -1094,9 +1098,9 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   ))}
                 </div>
               )}
-              <button className="btn btn-blue" style={{ marginTop: 4 }} onClick={() => setShowResultPopup(false)}>
-                확인
-              </button>
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+                진행자가 다음 홀로 넘어가면 닫힙니다
+              </p>
             </div>
           </div>
         </div>
