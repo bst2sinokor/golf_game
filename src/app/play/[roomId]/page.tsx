@@ -586,10 +586,12 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 ) : (
                   <p style={{ fontSize: 11, color: 'var(--muted)', margin: '0 0 1px', whiteSpace: 'nowrap' }}>내 보유</p>
                 )}
-                <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: amount >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                  {amount.toLocaleString()}원
-                </p>
-                {!showBank && myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10 }}>OECD</span>}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+                  {!showBank && myTotals?.isOecd && <span className="tag-red" style={{ fontSize: 10, flexShrink: 0 }}>OECD</span>}
+                  <p style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', color: amount >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                    {amount.toLocaleString()}원
+                  </p>
+                </div>
               </div>
             )
           })()}
