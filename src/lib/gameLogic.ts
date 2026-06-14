@@ -506,7 +506,7 @@ export function calcAllResults(room: Room): {
   sinperioGross: Record<string, number>
   sinperioHandicaps: Record<string, number>
   sinperioTransfers: Settlement[]
-  buddyResults: Record<number, { id: string; amount: number; label: string }[]>
+  buddyResults: Record<number, { id: string; amount: number; label: string; unit: number; count: number }[]>
   oecdResults: Record<number, { id: string; amount: number; detail: string }[]>
   eventResults: Record<number, { label: string; id: string | null; amount: number }[]>
   settlements: Settlement[]
@@ -517,7 +517,7 @@ export function calcAllResults(room: Room): {
   const buddyDeltas: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const oecdPenalties: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
   const holeResults: Record<number, HoleGameResult[]> = {}
-  const buddyResults: Record<number, { id: string; amount: number; label: string }[]> = {}
+  const buddyResults: Record<number, { id: string; amount: number; label: string; unit: number; count: number }[]> = {}
   const oecdResults: Record<number, { id: string; amount: number; detail: string }[]> = {}
   const eventResults: Record<number, { label: string; id: string | null; amount: number }[]> = {}
   let sinperioDeltas: Record<string, number> = {}
@@ -663,7 +663,8 @@ export function calcAllResults(room: Room): {
         const walletOf = (pid: string) =>
           baseDistribution + walletGains[pid] + buddyDeltas[pid] - oecdPenalties[pid]
         const holeGains: Record<string, number> = {}
-        for (const maker of makers) holeGains[maker] = 0
+        const holeCount: Record<string, number> = {}  // 각 버디 메이커가 받은 인원 수
+        for (const maker of makers) { holeGains[maker] = 0; holeCount[maker] = 0 }
         for (const pid of playerIds) {
           if (makers.includes(pid)) continue  // 버디한 사람끼리는 주고받지 않음
           for (const maker of makers) {
@@ -673,12 +674,13 @@ export function calcAllResults(room: Room): {
             buddyDeltas[pid]   -= pay
             buddyDeltas[maker] += pay
             holeGains[maker]   += pay
+            holeCount[maker]   += 1
           }
         }
         buddyResults[h] = makers.map(m => {
           const d = (scores[m] ?? holePar) - holePar
           const label = d <= -3 ? '알바트로스' : d === -2 ? '이글' : '버디'
-          return { id: m, amount: holeGains[m] ?? 0, label }
+          return { id: m, amount: holeGains[m] ?? 0, label, unit: bVal, count: holeCount[m] ?? 0 }
         })
       }
     }

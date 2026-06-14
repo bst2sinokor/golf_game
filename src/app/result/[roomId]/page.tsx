@@ -282,21 +282,21 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <div key={`b${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
                   <span style={{ color: '#16a34a', fontWeight: 600 }}>버디값</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
-                  {room.players[b.id]?.name ?? b.id} {b.label}! +{b.amount.toLocaleString()}원
+                  {room.players[b.id]?.name ?? b.id} {b.label}! ({b.count > 0 && b.amount === b.unit * b.count ? `+${b.unit.toLocaleString()}원 × ${b.count}인` : `+${b.amount.toLocaleString()}원`})
                 </div>
               ))}
               {events.map((e, i) => (
                 <div key={`e${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
                   <span style={{ color: '#d97706', fontWeight: 600 }}>{e.label}</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
-                  {e.id ? `${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : 'PASS'}
+                  {e.id ? `${room.players[e.id]?.name ?? e.id} (+${e.amount.toLocaleString()}원)` : 'PASS'}
                 </div>
               ))}
               {penalties.map((p, i) => (
                 <div key={`p${i}`} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 3 }}>
                   <span style={{ color: '#b91c1c', fontWeight: 600 }}>OECD 페널티</span>
                   <span style={{ color: 'var(--muted)' }}> · </span>
-                  {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                  {room.players[p.id]?.name ?? p.id} (−{p.amount.toLocaleString()}원)
                   <span style={{ color: 'var(--muted)' }}> ({p.detail})</span>
                 </div>
               ))}

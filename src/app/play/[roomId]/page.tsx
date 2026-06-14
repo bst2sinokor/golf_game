@@ -743,7 +743,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                     {results.buddyResults[viewHole].map(b =>
-                      `${room.players[b.id]?.name ?? b.id} ${b.label}! +${b.amount.toLocaleString()}원`
+                      `${room.players[b.id]?.name ?? b.id} ${b.label}! (${b.count > 0 && b.amount === b.unit * b.count ? `+${b.unit.toLocaleString()}원 × ${b.count}인` : `+${b.amount.toLocaleString()}원`})`
                     ).join(' · ')}
                   </div>
                 </div>
@@ -755,7 +755,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                     {results.eventResults[viewHole].map(e =>
-                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : `${e.label} PASS`
+                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} (+${e.amount.toLocaleString()}원)` : `${e.label} PASS`
                     ).join(' · ')}
                   </div>
                 </div>
@@ -767,7 +767,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   </div>
                   {results.oecdResults[viewHole].map((p, i) => (
                     <div key={i} style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                      {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                      {room.players[p.id]?.name ?? p.id} (−{p.amount.toLocaleString()}원)
                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
                     </div>
                   ))}
@@ -1066,7 +1066,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#d97706', marginBottom: 3 }}>니어 · 롱기스트</p>
                   <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
                     {results.eventResults[viewHole].map(e =>
-                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} +${e.amount.toLocaleString()}원` : `${e.label} PASS`
+                      e.id ? `${e.label} ${room.players[e.id]?.name ?? e.id} (+${e.amount.toLocaleString()}원)` : `${e.label} PASS`
                     ).join(' · ')}
                   </p>
                 </div>
@@ -1079,7 +1079,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', marginBottom: 3 }}>버디값</p>
                   <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
                     {results.buddyResults[viewHole].map(b =>
-                      `${room.players[b.id]?.name ?? b.id} ${b.label}! +${b.amount.toLocaleString()}원`
+                      `${room.players[b.id]?.name ?? b.id} ${b.label}! (${b.count > 0 && b.amount === b.unit * b.count ? `+${b.unit.toLocaleString()}원 × ${b.count}인` : `+${b.amount.toLocaleString()}원`})`
                     ).join(' · ')}
                   </p>
                 </div>
@@ -1092,7 +1092,7 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginBottom: 3 }}>OECD 페널티</p>
                   {results.oecdResults[viewHole].map((p, i) => (
                     <p key={i} style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
-                      {room.players[p.id]?.name ?? p.id} −{p.amount.toLocaleString()}원
+                      {room.players[p.id]?.name ?? p.id} (−{p.amount.toLocaleString()}원)
                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
                     </p>
                   ))}
