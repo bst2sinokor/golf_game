@@ -96,6 +96,11 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
     }
   }, [roomId])
 
+  // 스텝 변경 시 화면 맨 위로 스크롤
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [step])
+
   // 코스 프리셋·조합 로드
   useEffect(() => {
     fetchCoursePresets().then(setPresets)

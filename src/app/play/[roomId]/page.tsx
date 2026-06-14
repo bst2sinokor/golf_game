@@ -111,8 +111,9 @@ function getTeamDisplay(g: GameConfig, room: Room, hole: number): { text: string
     const r = resolveHussein(room, hole)
     if (r) {
       const name = room.players[r.id]?.name ?? '?'
-      const ratio = (room.config.husseinMode ?? '134') === '13' ? '1:2' : '1:3'
-      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} ${ratio}`, unresolved: false }
+      const allyCount = Object.keys(room.players).length - 1
+      const opp = (room.config.husseinMode ?? '134') === '13' ? Math.min(2, allyCount) : allyCount
+      return { text: `${r.ai ? 'A.I 랜덤 · ' : ''}${name} 1:${Math.max(1, opp)}`, unresolved: false }
     }
     return { text: '미정', unresolved: true }
   }
@@ -883,16 +884,25 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
               <div style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>좌탄우탄 티샷 방향</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {(['left', 'right'] as const).map(d => (
-                    <button key={d} onClick={() => setDirInput(d)} style={{
-                      flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer',
-                      fontWeight: 700, fontSize: 15,
-                      background: dirInput === d ? (d === 'left' ? 'var(--blue)' : 'var(--red)') : 'var(--bg)',
-                      color: dirInput === d ? '#fff' : 'var(--muted)',
-                    }}>
-                      {d === 'left' ? '← 좌탄' : '우탄 →'}
-                    </button>
-                  ))}
+                  {(['left', 'right'] as const).map(d => {
+                    // 한 방향 정원 = 전체 인원의 절반(올림). 본인 외 인원이 정원에 차면 마감
+                    // (진행자는 수정이 필요할 수 있으므로 마감 비적용)
+                    const cap = Math.ceil(Object.keys(room.players).length / 2)
+                    const dirs = room.holes[viewHole]?.jootanwootan ?? {}
+                    const othersInD = Object.entries(dirs).filter(([id, dir]) => id !== targetId && dir === d).length
+                    const full = !isHost && othersInD >= cap && dirInput !== d
+                    return (
+                      <button key={d} disabled={full} onClick={() => { if (!full) setDirInput(d) }} style={{
+                        flex: 1, padding: 10, borderRadius: 8, border: '1px solid var(--border)',
+                        cursor: full ? 'not-allowed' : 'pointer', opacity: full ? 0.4 : 1,
+                        fontWeight: 700, fontSize: 15,
+                        background: dirInput === d ? (d === 'left' ? 'var(--blue)' : 'var(--red)') : 'var(--bg)',
+                        color: dirInput === d ? '#fff' : 'var(--muted)',
+                      }}>
+                        {d === 'left' ? '← 좌탄' : '우탄 →'}{full ? ' (마감)' : ''}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}

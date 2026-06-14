@@ -230,7 +230,7 @@ export function resolveHussein(room: Room, hole: number): { id: string; ai: bool
   if (rank && rank.length >= 4) return { id: rank[1], ai: false }
   if ((room.config.teamAssign ?? 'random') === 'random') {
     const ids = Object.keys(room.players).sort()
-    if (ids.length >= 4) return { id: seededShuffle(ids, hashStr(room.id + ':hs:' + hole))[0], ai: true }
+    if (ids.length >= 2) return { id: seededShuffle(ids, hashStr(room.id + ':hs:' + hole))[0], ai: true }
   }
   return null
 }
@@ -242,9 +242,10 @@ export function resolveLasvegasTeamA(room: Room, hole: number): { teamA: string[
   if (rank && rank.length >= 4) return { teamA: [rank[0], rank[3]], ai: false }
   if ((room.config.teamAssign ?? 'random') === 'random') {
     const ids = Object.keys(room.players).sort()
-    if (ids.length >= 4) {
+    if (ids.length >= 2) {
       const o = seededShuffle(ids, hashStr(room.id + ':lv:' + hole))
-      return { teamA: [o[0], o[1]], ai: true }
+      const half = Math.max(1, Math.floor(o.length / 2))
+      return { teamA: o.slice(0, half), ai: true }
     }
   }
   return null
@@ -272,20 +273,19 @@ function calcHussein(
 
   // 대결 방식: 134=2등 vs 1·3·4등(본인×3 vs 3명 합), 13=2등 vs 1·3등(본인×2 vs 2명 합)
   // 13 모드는 점수 비교만 1·3등으로, 금전 분배는 134와 동일(연합군 전원 지급/수령)
+  // 점수 대결 상대(연합군) 결정. 13 모드는 상위 2명(1·3등)만, 134 모드는 전원.
+  // 후세인 점수는 상대 인원수만큼 곱해 공정 비교 (4인 134=×3, 13=×2, 2인=×1)
   const mode = room.config.husseinMode ?? '134'
-  let husseinScore: number
-  let alliesScore: number
+  let scoringAllies: string[]
   if (mode === '13') {
-    // 직전 순위로 연합군 정렬 → 상위 2명(1·3등)만 점수 대결, 최하위(4등)는 점수 제외
     const rank = findFullRanking(room, hole)
     const ranked = rank ? rank.filter(id => alliesIds.includes(id)) : []
-    const scoringAllies = (ranked.length === alliesIds.length ? ranked : [...alliesIds].sort()).slice(0, 2)
-    husseinScore = (scores[husseinId] ?? 0) * 2
-    alliesScore  = scoringAllies.reduce((s, id) => s + (scores[id] ?? 0), 0)
+    scoringAllies = (ranked.length === alliesIds.length ? ranked : [...alliesIds].sort()).slice(0, 2)
   } else {
-    husseinScore = (scores[husseinId] ?? 0) * 3
-    alliesScore  = alliesIds.reduce((s, id) => s + (scores[id] ?? 0), 0)
+    scoringAllies = alliesIds
   }
+  const husseinScore = (scores[husseinId] ?? 0) * Math.max(1, scoringAllies.length)
+  const alliesScore  = scoringAllies.reduce((s, id) => s + (scores[id] ?? 0), 0)
   const perPerson = (cfg.betPerHole ?? 0) + prevCarry
 
   if (husseinScore === alliesScore) {
