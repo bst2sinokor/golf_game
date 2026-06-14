@@ -39,7 +39,7 @@ export function orderedPlayerIds(room: Room): string[] {
   })
 }
 
-// ─── 스트로크 (개인전, 홀별 판돈 누적) ─────────────────────────────────────
+// ─── 스킨스 (개인전, 홀별 판돈 누적. 내부 키는 stroke) ─────────────────────
 
 function calcStroke(
   hole: number,
@@ -398,25 +398,30 @@ function calcScratch(
 // ─── 신페리오 핸디캡 ─────────────────────────────────────────────────────────
 
 export function selectSinperioHoles(holePars: number[]): number[] {
-  // 홀 번호 1~18 중에서 파3×2, 파4×2, 파5×2 무작위 선택 (마지막 2홀 제외: 8,9,17,18)
-  const excluded = new Set([8, 9, 17, 18])
-  const par3: number[] = [], par4: number[] = [], par5: number[] = []
-  for (let h = 1; h <= 18; h++) {
-    if (excluded.has(h)) continue
-    const p = holePars[h - 1]
-    if (p === 3) par3.push(h)
-    else if (p === 4) par4.push(h)
-    else if (p === 5) par5.push(h)
+  // 정식 신페리오(New Peoria): 전반 6홀 + 후반 6홀 = 12홀.
+  // 단순 무작위가 아니라, 선정 12홀의 파 합이 코스 전체 파의 약 2/3가 되도록
+  // (= 12홀 합 × 1.5 ≈ 코스 파) 파 구성을 대표하게 뽑는다.
+  // 각 나인에서 '제외할 3홀'의 파 합이 그 나인 파 합의 1/3에 가장 가깝도록 선택
+  // (가장 가까운 조합이 여럿이면 무작위 → 매 게임 다양성 유지). 어느 홀인지는 종료까지 비공개.
+  const pickNine = (from: number, to: number): number[] => {
+    const holes: number[] = []
+    for (let h = from; h <= to; h++) holes.push(h)
+    const par = (h: number) => holePars[h - 1] ?? 4
+    const target = holes.reduce((s, h) => s + par(h), 0) / 3  // 제외 3홀의 목표 파 합
+    let best = Infinity
+    let bestCombos: number[][] = []
+    for (let i = 0; i < holes.length; i++)
+      for (let j = i + 1; j < holes.length; j++)
+        for (let k = j + 1; k < holes.length; k++) {
+          const sum = par(holes[i]) + par(holes[j]) + par(holes[k])
+          const dev = Math.abs(sum - target)
+          if (dev < best - 1e-9) { best = dev; bestCombos = [[holes[i], holes[j], holes[k]]] }
+          else if (Math.abs(dev - best) < 1e-9) bestCombos.push([holes[i], holes[j], holes[k]])
+        }
+    const excluded = bestCombos[Math.floor(Math.random() * bestCombos.length)] ?? []
+    return holes.filter(h => !excluded.includes(h))
   }
-  const pick = (arr: number[], n: number) => {
-    const shuffled = [...arr].sort(() => Math.random() - 0.5)
-    return shuffled.slice(0, n)
-  }
-  return [
-    ...pick(par3, Math.min(2, par3.length)),
-    ...pick(par4, Math.min(2, par4.length)),
-    ...pick(par5, Math.min(2, par5.length)),
-  ]
+  return [...pickNine(1, 9), ...pickNine(10, 18)]
 }
 
 function calcSinperio(
@@ -444,15 +449,16 @@ function calcSinperio(
       gross += room.holes[h]?.scores?.[pid] ?? holePars[h - 1]
     }
 
-    let selected6sum = 0
+    let selectedSum = 0
     for (const h of selectedHoles) {
       const par    = holePars[h - 1]
       const raw    = room.holes[h]?.scores?.[pid] ?? par
-      const capped = Math.min(raw, par + 2)  // 더블파+1 상한
-      selected6sum += capped
+      const capped = Math.min(raw, par + 2)  // 홀당 더블보기(파+2) 상한
+      selectedSum += capped
     }
 
-    const handicap = Math.round((selected6sum * 3 - totalPar) * 0.8)
+    // 신페리오: 12홀 합 × 1.5 로 18홀 환산 후 (− 코스파) × 0.8
+    const handicap = Math.round((selectedSum * 1.5 - totalPar) * 0.8)
     grossScores[pid] = gross
     handicaps[pid]   = handicap
     netScores[pid]   = gross - handicap

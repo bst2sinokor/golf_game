@@ -1,7 +1,7 @@
 export type GameType = 'stroke' | 'team-match' | 'jootanwootan' | 'hussein' | 'sinperio' | 'scratch' | 'lasvegas'
 
 export const GAME_LABELS: Record<GameType, string> = {
-  stroke: '스트로크',
+  stroke: '스킨스',
   'team-match': '팀 매치플레이',
   jootanwootan: '좌탄우탄',
   hussein: '후세인',
