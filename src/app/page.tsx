@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRoom, joinRoom } from '@/lib/roomStore'
 import HowToModal from '@/components/HowToModal'
+import SupportButton from '@/components/SupportButton'
 
 export default function Home() {
   const router = useRouter()
@@ -139,6 +140,10 @@ export default function Home() {
           진행자가 방을 만들고 방 코드를 공유하면<br />
           동반자들이 각자 폰에서 참가합니다.
         </p>
+
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <SupportButton variant="link" />
+        </div>
       </div>
     </div>
   )

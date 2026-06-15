@@ -5,6 +5,7 @@ import { subscribeRoom } from '@/lib/roomStore'
 import type { Room } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { calcAllResults, orderedPlayerIds } from '@/lib/gameLogic'
+import SupportButton from '@/components/SupportButton'
 
 // 결과 문구의 플레이어 ID → 이름 치환
 function resolveNames(detail: string, players: Room['players']): string {
@@ -308,9 +309,10 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
       <button className="btn btn-green" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
         스코어보드 보기
       </button>
-      <button className="btn btn-gray" onClick={() => router.push('/')}>
+      <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push('/')}>
         🏠 홈으로
       </button>
+      <SupportButton variant="button" />
     </div>
   )
 }
