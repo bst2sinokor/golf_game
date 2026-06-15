@@ -7,6 +7,7 @@ import { GAME_LABELS } from '@/lib/types'
 import { GAME_DETAIL, EVENT_DETAIL, EVENT_COLOR } from '@/lib/gameInfo'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 import GuideText, { GAME_COLOR } from '@/components/GuideText'
+import { GOLF_CLUBS } from '@/lib/golfClubs'
 
 const ALL_GAMES: GameType[] = ['stroke', 'jopok', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
 const GAME_DESC: Record<GameType, string> = {
@@ -21,6 +22,48 @@ const GAME_DESC: Record<GameType, string> = {
 }
 
 const DEFAULT_PAR = Array(18).fill(0)  // 0 = 미선택 (확정 시 프리셋 또는 파4로 채움)
+
+// ─── 골프장 이름 오타 허용 매칭 ───────────────────────────────────────────
+function normClub(s: string): string {
+  return s.replace(/\s+/g, '').replace(/(cc|gc|컨트리클럽|골프클럽|골프장)$/i, '').toLowerCase()
+}
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length
+  if (!m) return n
+  if (!n) return m
+  const dp = Array.from({ length: m + 1 }, (_, i) => i)
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0]; dp[0] = j
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i]
+      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
+      prev = tmp
+    }
+  }
+  return dp[m]
+}
+// 시드 DB: 골프장명 → 지역 매핑, 이름 목록 (모듈 1회 구성)
+const SEED_REGION: Record<string, string> = {}
+GOLF_CLUBS.forEach(c => { if (!(c.n in SEED_REGION)) SEED_REGION[c.n] = c.r })
+const SEED_NAMES: string[] = GOLF_CLUBS.map(c => c.n)
+
+// 입력어와 비슷한 골프장 후보를 유사도순으로 반환 (오타·부분일치 허용)
+function matchClubs(query: string, clubs: string[]): string[] {
+  const q = normClub(query)
+  if (!q) return clubs
+  return clubs
+    .map(name => {
+      const n = normClub(name)
+      let score: number
+      if (n === q) score = 0
+      else if (n.includes(q) || q.includes(n)) score = 1
+      else score = 2 + levenshtein(q, n)
+      return { name, score, len: Math.max(q.length, n.length) }
+    })
+    .filter(x => x.score <= 2 + Math.ceil(x.len * 0.45))
+    .sort((a, b) => a.score - b.score)
+    .map(x => x.name)
+}
 
 export default function SetupPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
@@ -47,6 +90,11 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [combos, setCombos]           = useState<CourseCombo[]>([])
   const [courseConfirmed, setCourseConfirmed] = useState(false)
   const [courseMsg, setCourseMsg]     = useState('')
+  const [courseModal, setCourseModal] = useState(false)
+  const [modalClub, setModalClub]     = useState('')  // 팝업에서 확정된 골프장(오타 보정 후)
+  const [clubQuery, setClubQuery]     = useState('')  // 팝업 내 골프장 검색어(좁히기)
+  const [pick, setPick]               = useState<string[]>([])  // [전반, 후반] 순서
+  const [newCourse, setNewCourse]     = useState('')
   // 기본금액
   const [initAmounts, setInitAmounts] = useState<Record<string, number>>({})
   // OECD
@@ -132,12 +180,58 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
       : '저장된 홀별 파를 불러왔습니다.')
   }
 
-  // 칩 선택: 골프장+전반+후반 일괄 입력 + 즉시 적용
-  function selectCombo(cb: CourseCombo) {
-    setClub(cb.club)
-    setFrontCourse(cb.frontCourse)
-    setBackCourse(cb.backCourse)
-    applyCourse(cb.club, cb.frontCourse, cb.backCourse)
+  // 골프장 이름 목록(시드 DB + 저장된 코스, 중복 제거)
+  function allClubs(): string[] {
+    const s = new Set<string>()
+    SEED_NAMES.forEach(n => s.add(n))
+    presets.forEach(p => s.add(p.club))
+    combos.forEach(cb => s.add(cb.club))
+    return Array.from(s)
+  }
+
+  // 코스 검색 팝업 열기 (오타 보정: 정확/단일 일치면 바로 코스 선택, 아니면 골프장 후보 단계)
+  function openCourseModal() {
+    if (!club.trim()) { setCourseMsg('골프장 이름을 먼저 입력해주세요.'); return }
+    const cands = matchClubs(club, allClubs())
+    const exact = cands.find(n => normClub(n) === normClub(club))
+    const auto  = exact || (cands.length === 1 ? cands[0] : '')
+    setModalClub(auto)
+    setClubQuery(club.trim())
+    setPick(auto && courseConfirmed && frontCourse.trim() && backCourse.trim() ? [frontCourse.trim(), backCourse.trim()] : [])
+    setNewCourse('')
+    setCourseModal(true)
+  }
+
+  // 팝업에서 골프장 선택(후보/직접) → 코스 선택 단계로
+  function selectModalClub(name: string) {
+    setModalClub(name)
+    setPick([])
+    setNewCourse('')
+  }
+
+  // 팝업에서 코스 토글 (1번째=전반, 2번째=후반)
+  function togglePick(course: string) {
+    setPick(prev => prev.includes(course)
+      ? prev.filter(c => c !== course)
+      : prev.length >= 2 ? prev : [...prev, course])
+  }
+
+  // 직접 입력 코스 추가
+  function addNewCourse() {
+    const c = newCourse.trim()
+    if (!c) return
+    setPick(prev => prev.includes(c) || prev.length >= 2 ? prev : [...prev, c])
+    setNewCourse('')
+  }
+
+  // 확정: 골프장(보정값)·전반/후반 적용
+  function confirmCourseModal() {
+    if (pick.length < 2 || !modalClub.trim()) return
+    setClub(modalClub.trim())
+    setFrontCourse(pick[0])
+    setBackCourse(pick[1])
+    applyCourse(modalClub, pick[0], pick[1])
+    setCourseModal(false)
   }
 
   function toggleGame(g: GameType) {
@@ -596,6 +690,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
 
           {/* ② 홀 파 설정 */}
           {step === 'pars' && (
+            <>
             <div className="card">
               <p style={{ fontWeight: 700, marginBottom: 12 }}>
                 홀별 파 설정
@@ -606,51 +701,38 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                 )}
               </p>
 
-              {/* 저장된 코스 원터치 칩 */}
-              {combos.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-                  {combos.map(cb => {
-                    const sel = courseConfirmed
-                      && cb.club === club.trim() && cb.frontCourse === frontCourse.trim() && cb.backCourse === backCourse.trim()
-                    return (
-                      <button key={`${cb.club}_${cb.frontCourse}_${cb.backCourse}`} onClick={() => selectCombo(cb)} style={{
-                        padding: '6px 11px', borderRadius: 16, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 700,
-                        background: sel ? 'var(--green)' : 'var(--bg)',
-                        color: sel ? '#fff' : 'var(--text)',
-                        border: sel ? 'none' : '1px solid var(--border)',
-                      }}>
-                        {cb.club} · {cb.frontCourse}/{cb.backCourse}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* 골프장·전반/후반 코스 직접 입력 + 확정 */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+              {/* 골프장 이름 + 검색 → 코스 선택 팝업 */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
                 <input type="text" value={club}
                   onChange={e => { setClub(e.target.value); setCourseConfirmed(false) }}
                   placeholder="골프장 이름"
-                  style={{ flex: 1.2, minWidth: 0 }} />
-                <input type="text" value={frontCourse}
-                  onChange={e => { setFrontCourse(e.target.value); setCourseConfirmed(false) }}
-                  placeholder="전반코스"
                   style={{ flex: 1, minWidth: 0 }} />
-                <input type="text" value={backCourse}
-                  onChange={e => { setBackCourse(e.target.value); setCourseConfirmed(false) }}
-                  placeholder="후반코스"
-                  style={{ flex: 1, minWidth: 0 }} />
-                <button onClick={() => applyCourse(club, frontCourse, backCourse)} style={{
-                  padding: '0 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 700, flexShrink: 0,
-                  background: courseConfirmed ? 'var(--green)' : 'var(--blue)', color: '#fff',
-                }}>
-                  {courseConfirmed ? '확정됨' : '확정'}
-                </button>
+                <button onClick={openCourseModal} style={{
+                  padding: '0 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: 14, fontWeight: 700, flexShrink: 0,
+                  background: 'var(--blue)', color: '#fff',
+                }}>검색</button>
               </div>
+
+              {/* 선택된 코스 요약 */}
+              {courseConfirmed && frontCourse.trim() && backCourse.trim() && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', marginBottom: 8,
+                  background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)',
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 0 }}>
+                    {club.trim()} · 전반 {frontCourse.trim()} / 후반 {backCourse.trim()}
+                  </span>
+                  <button onClick={openCourseModal} style={{
+                    marginLeft: 'auto', flexShrink: 0, padding: '5px 10px', borderRadius: 7,
+                    border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 700, color: 'var(--muted)',
+                  }}>변경</button>
+                </div>
+              )}
+
               {courseMsg && (
-                <p style={{ fontSize: 12, color: courseMsg.includes('불러왔') ? 'var(--green)' : '#d97706', fontWeight: 600, marginBottom: 10 }}>
+                <p style={{ fontSize: 12.5, color: courseMsg.includes('불러왔') ? 'var(--green)' : '#d97706', fontWeight: 600, marginBottom: 10 }}>
                   {courseMsg}
                 </p>
               )}
@@ -682,6 +764,170 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                 </div>
               ))}
             </div>
+
+            {/* 코스 선택 팝업 */}
+            {courseModal && (() => {
+              const typed = clubQuery.trim()
+              const allCand = matchClubs(clubQuery, allClubs())
+              const candidates = allCand.slice(0, 40)
+              const typedIsCandidate = allCand.some(n => normClub(n) === normClub(typed))
+              const phaseCourse = !!modalClub.trim()
+              const c = modalClub.trim()
+              const found = new Set<string>()
+              presets.forEach(p => { if (p.club === c) found.add(p.course) })
+              combos.forEach(cb => { if (cb.club === c) { found.add(cb.frontCourse); found.add(cb.backCourse) } })
+              pick.forEach(p => found.add(p))
+              const list = Array.from(found)
+              const hasPars = (course: string) => presets.some(p => p.club === c && p.course === course)
+              return (
+                <div onClick={() => setCourseModal(false)} style={{
+                  position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(15,23,42,.55)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18,
+                }}>
+                  <div onClick={e => e.stopPropagation()} style={{
+                    background: '#fff', borderRadius: 18, width: '100%', maxWidth: 380, maxHeight: '85vh',
+                    display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,.3)',
+                  }}>
+                    <div style={{ padding: '16px 18px 14px', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', position: 'relative' }}>
+                      <button onClick={() => setCourseModal(false)} style={{
+                        position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: '50%',
+                        border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,.22)', color: '#fff',
+                        fontSize: 15, fontWeight: 800, lineHeight: 1,
+                      }}>✕</button>
+                      {phaseCourse ? (
+                        <>
+                          <p style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0 }}>{c} 코스 선택</p>
+                          <p style={{ fontSize: 12.5, color: '#dbeafe', margin: '4px 0 0' }}>코스를 순서대로 누르면 전반·후반이 정해져요</p>
+                        </>
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0 }}>골프장 선택</p>
+                          <p style={{ fontSize: 12.5, color: '#dbeafe', margin: '4px 0 0' }}>‘{typed}’ 와(과) 비슷한 골프장이에요</p>
+                        </>
+                      )}
+                    </div>
+
+                    <div style={{ padding: 16, overflowY: 'auto' }}>
+                      {phaseCourse ? (
+                        <>
+                          {/* 다른 골프장 다시 고르기 */}
+                          <button onClick={() => setModalClub('')} style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 12,
+                            color: 'var(--blue)', fontSize: 12.5, fontWeight: 700,
+                          }}>← 다른 골프장 선택</button>
+
+                          {/* 선택 요약 */}
+                          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                            {['전반', '후반'].map((lab, i) => (
+                              <div key={lab} style={{
+                                flex: 1, padding: '8px 10px', borderRadius: 10,
+                                background: i === 0 ? 'rgba(22,163,74,.10)' : 'rgba(37,99,235,.10)',
+                                border: `1px solid ${i === 0 ? 'rgba(22,163,74,.35)' : 'rgba(37,99,235,.35)'}`,
+                              }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: i === 0 ? 'var(--green)' : 'var(--blue)' }}>{lab}</span>
+                                <p style={{ fontSize: 13, fontWeight: 700, margin: '2px 0 0', color: pick[i] ? 'var(--text)' : 'var(--muted)' }}>{pick[i] || '미선택'}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* 코스 목록 */}
+                          {list.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                              {list.map(course => {
+                                const idx = pick.indexOf(course)
+                                const sel = idx >= 0
+                                return (
+                                  <button key={course} onClick={() => togglePick(course)} style={{
+                                    padding: '8px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                                    border: sel ? 'none' : '1px solid var(--border)',
+                                    background: sel ? (idx === 0 ? 'var(--green)' : 'var(--blue)') : 'var(--bg)',
+                                    color: sel ? '#fff' : 'var(--text)',
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  }}>
+                                    {sel && <span style={{ fontSize: 10, background: 'rgba(255,255,255,.3)', borderRadius: 6, padding: '1px 5px' }}>{idx === 0 ? '전반' : '후반'}</span>}
+                                    {course}
+                                    {!hasPars(course) && <span style={{ fontSize: 10, color: sel ? 'rgba(255,255,255,.85)' : 'var(--muted)' }}>(파 미등록)</span>}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12 }}>
+                              저장된 코스가 없어요. 아래에 코스 이름을 직접 입력하세요.
+                            </p>
+                          )}
+
+                          {/* 직접 입력 */}
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <input type="text" value={newCourse} onChange={e => setNewCourse(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && addNewCourse()}
+                              placeholder="코스 직접 입력 (예: 레이크)" style={{ flex: 1, minWidth: 0 }} />
+                            <button onClick={addNewCourse} disabled={!newCourse.trim() || pick.length >= 2} style={{
+                              padding: '0 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, flexShrink: 0,
+                              background: (!newCourse.trim() || pick.length >= 2) ? 'var(--border)' : 'var(--green)', color: '#fff',
+                            }}>추가</button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* 골프장 검색어 좁히기 */}
+                          <input type="text" value={clubQuery} onChange={e => setClubQuery(e.target.value)}
+                            placeholder="골프장 이름 검색 (오타 OK)" autoFocus
+                            style={{ width: '100%', marginBottom: 10 }} />
+
+                          {/* 골프장 후보 목록 */}
+                          {candidates.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                              {candidates.map(name => (
+                                <button key={name} onClick={() => selectModalClub(name)} style={{
+                                  display: 'flex', alignItems: 'center', gap: 8,
+                                  textAlign: 'left', padding: '11px 13px', borderRadius: 10, cursor: 'pointer',
+                                  fontSize: 14, fontWeight: 700, color: 'var(--text)',
+                                  border: '1px solid var(--border)', background: 'var(--bg)',
+                                }}>
+                                  <span style={{ flex: 1, minWidth: 0 }}>{name}</span>
+                                  {SEED_REGION[name] && (
+                                    <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--muted)', background: 'var(--card)', borderRadius: 6, padding: '2px 7px' }}>{SEED_REGION[name]}</span>
+                                  )}
+                                </button>
+                              ))}
+                              {allCand.length > candidates.length && (
+                                <p style={{ fontSize: 11.5, color: 'var(--muted)', textAlign: 'center', margin: '2px 0 0' }}>
+                                  +{allCand.length - candidates.length}곳 더 — 이름을 더 입력해 좁혀보세요
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12 }}>
+                              비슷한 골프장이 없어요. 아래로 직접 등록하세요.
+                            </p>
+                          )}
+
+                          {/* 입력한 이름 그대로 사용 (새 골프장) */}
+                          {typed && !typedIsCandidate && (
+                            <button onClick={() => selectModalClub(typed)} style={{
+                              width: '100%', textAlign: 'left', padding: '11px 13px', borderRadius: 10, cursor: 'pointer',
+                              fontSize: 14, fontWeight: 700, color: 'var(--green)',
+                              border: '1px dashed var(--green)', background: 'rgba(22,163,74,.06)',
+                            }}>‘{typed}’ 그대로 사용 (새 골프장 등록)</button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {phaseCourse && (
+                      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+                        <button onClick={confirmCourseModal} disabled={pick.length < 2} className="btn btn-blue"
+                          style={{ opacity: pick.length < 2 ? .5 : 1 }}>
+                          확정{pick.length < 2 ? ` (코스 ${pick.length}/2 선택)` : ''}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+            </>
           )}
 
           {/* ③ 판돈 설정 */}
@@ -989,7 +1235,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
                     }
                     setStep(step === 'pars' ? 'extras' : step === 'extras' ? 'games' : 'money')
                   }}>
-                  다음
+                  {step === 'pars' ? '저장 후 다음' : '다음'}
                 </button>
               ) : (
                 <button className="btn btn-green" onClick={handleStart}
