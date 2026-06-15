@@ -50,7 +50,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '56px 16px 24px' }}>
       {/* 사용방법 버튼 (좌측 상단) */}
       <button onClick={() => setShowHowTo(true)} style={{
         position: 'fixed', top: 14, left: 14, zIndex: 50,
