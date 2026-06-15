@@ -85,7 +85,7 @@ export default function Home() {
               style={{
                 flex: 1, padding: '10px', borderRadius: 7, border: 'none', cursor: 'pointer',
                 fontSize: 15, fontWeight: 600,
-                background: tab === t ? 'var(--green)' : 'transparent',
+                background: tab === t ? (t === 'create' ? 'var(--green)' : 'var(--blue)') : 'transparent',
                 color: tab === t ? '#fff' : 'var(--muted)',
                 transition: 'all .15s',
               }}>
@@ -105,7 +105,6 @@ export default function Home() {
                 value={roomCode}
                 onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                 maxLength={4}
-                style={{ letterSpacing: 2, textAlign: 'center', fontWeight: 700 }}
               />
             </div>
           )}
