@@ -50,7 +50,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '56px 16px 24px' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '96px 16px 24px' }}>
       {/* 사용방법 버튼 (좌측 상단) */}
       <button onClick={() => setShowHowTo(true)} style={{
         position: 'fixed', top: 14, left: 14, zIndex: 50,
@@ -135,7 +135,7 @@ export default function Home() {
           </button>
         </div>
 
-        <p style={{ color: 'var(--muted)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
+        <p style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
           진행자가 방을 만들고 방 코드를 공유하면<br />
           동반자들이 각자 폰에서 참가합니다.
         </p>

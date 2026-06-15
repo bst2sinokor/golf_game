@@ -45,7 +45,7 @@ export default function SupportButton({ variant = 'link' }: { variant?: 'link' |
     ) : (
       <button onClick={() => setOpen(true)} style={{
         background: 'none', border: 'none', cursor: 'pointer',
-        color: 'var(--muted)', fontSize: 12.5, fontWeight: 600,
+        color: 'var(--muted)', fontSize: 13, fontWeight: 600,
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: 4,
         textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--border)',
       }}>
