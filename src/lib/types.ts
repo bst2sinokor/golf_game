@@ -5,10 +5,10 @@ export const GAME_LABELS: Record<GameType, string> = {
   'team-match': '팀 매치플레이',
   jootanwootan: '좌탄우탄',
   hussein: '후세인',
-  sinperio: '신페리오 핸디캡',
+  sinperio: '신페리오',
   scratch: '스크레치',
   lasvegas: '라스베가스',
-  jopok: '조폭 스킨스',
+  jopok: '조폭',
 }
 
 export interface PlayerConfig {

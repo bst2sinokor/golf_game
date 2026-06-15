@@ -217,7 +217,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
       {/* 신페리오 상세 — 플레이어간 별도 정산 */}
       {Object.keys(sinperioDeltas).length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <p style={{ fontWeight: 700, marginBottom: 4 }}>신페리오 핸디캡 정산</p>
+          <p style={{ fontWeight: 700, marginBottom: 4 }}>신페리오 정산</p>
           <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
             선정 홀: {room.sinperioHoles.join(', ')}홀 · 핸디캡 적용 넷스코어 타수 차 정산
           </p>

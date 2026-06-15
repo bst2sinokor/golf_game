@@ -3,21 +3,21 @@ import { useState, useEffect } from 'react'
 import { saveConfig, savePlayerAmounts, removePlayer, setPlayerOrder } from '@/lib/roomStore'
 import type { Room, GameConfig, GameType, RoomConfig, OecdConfig, BuddyConfig, EventConfig } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
-import { GAME_DETAIL } from '@/lib/gameInfo'
+import { GAME_DETAIL, EVENT_DETAIL, EVENT_COLOR } from '@/lib/gameInfo'
 import { orderedPlayerIds } from '@/lib/gameLogic'
 import GuideText, { GAME_COLOR } from './GuideText'
 
-const ALL_GAMES: GameType[] = ['stroke', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'jopok', 'sinperio']
+const ALL_GAMES: GameType[] = ['stroke', 'jopok', 'lasvegas', 'team-match', 'jootanwootan', 'hussein', 'scratch', 'sinperio']
 
 const GAME_DESC: Record<GameType, string> = {
-  stroke:       '홀별 최저 타수 승자가 판돈 획득',
+  stroke:       '홀별 최저 타수 승자가 상금 획득',
   'team-match': '사전 팀 구성, 홀별 팀 합산 타수 비교',
   jootanwootan: '티샷 방향(좌/우)으로 매 홀 팀 구성',
-  hussein:      '직전 홀 2등(후세인) vs 연합군 대결(3명 또는 상위 2명)',
-  lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결 (4인 전용)',
-  sinperio:     '타 게임과 중복 진행 · 18홀 전체 적용 · 종료 후 핸디캡 정산',
+  hussein:      '직전 홀 2등(후세인) vs 연합군 대결',
+  lasvegas:     '직전 홀 1위+4위 vs 2위+3위 팀 대결',
+  sinperio:     '18홀 전체 적용 · 종료 후 핸디캡 정산',
   scratch:      '타수 차이만큼 금액을 서로 주고받음',
-  jopok:        '스킨스 + 벌칙/강탈 · 18홀 단독 (신페리오·니어·롱기와는 병행 가능)',
+  jopok:        '18홀 단독 진행 · 스킨스 + 벌칙/강탈',
 }
 
 interface Props {
@@ -89,7 +89,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   // 게임 상세 설명 팝업
-  const [detailGame, setDetailGame] = useState<GameType | null>(null)
+  const [detail, setDetail] = useState<{ label: string; color: string; text: string } | null>(null)
 
   // ── 헬퍼 ──
   function getHoleOwner(hole: number, excludeGame: GameType): GameType | null {
@@ -196,8 +196,8 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   return (
     <div>
       {/* 게임 상세 설명 팝업 */}
-      {detailGame && (
-        <div onClick={() => setDetailGame(null)} style={{
+      {detail && (
+        <div onClick={() => setDetail(null)} style={{
           position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(15,23,42,.55)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
         }}>
@@ -206,18 +206,18 @@ export default function GameSettings({ room, roomId, myId }: Props) {
             width: '100%', maxWidth: 360, maxHeight: '82vh', display: 'flex', flexDirection: 'column',
             boxShadow: '0 8px 32px rgba(0,0,0,.25)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 16px', background: GAME_COLOR[detailGame] }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 16px', background: detail.color }}>
               <span style={{
                 width: 22, height: 22, borderRadius: 7, background: 'rgba(255,255,255,.25)', color: '#fff',
                 fontSize: 12, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}>{GAME_LABELS[detailGame][0]}</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{GAME_LABELS[detailGame]}</span>
+              }}>{detail.label[0]}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{detail.label}</span>
             </div>
             <div style={{ padding: '14px 16px', overflowY: 'auto' }}>
-              <GuideText text={GAME_DETAIL[detailGame]} accent={GAME_COLOR[detailGame]} />
+              <GuideText text={detail.text} accent={detail.color} />
             </div>
             <div style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)' }}>
-              <button className="btn btn-blue" onClick={() => setDetailGame(null)}>닫기</button>
+              <button className="btn btn-blue" onClick={() => setDetail(null)}>닫기</button>
             </div>
           </div>
         </div>
@@ -306,11 +306,11 @@ export default function GameSettings({ room, roomId, myId }: Props) {
               {g === 'sinperio' && (
                 <div style={{ margin: '14px 0 2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 16 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.8px', color: 'var(--muted)', flexShrink: 0 }}>Additional Option</span>
+                    <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: '.8px', color: 'var(--blue)', flexShrink: 0 }}>Additional Option</span>
                     <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, marginBottom: 8, paddingLeft: 16 }}>
-                    위 게임들과 중복으로 함께 진행되는 옵션입니다
+                    위 게임들과 <span style={{ color: 'var(--blue)', fontWeight: 800 }}>병행하여 진행</span>할 수 있는 옵션입니다.
                   </p>
                 </div>
               )}
@@ -322,7 +322,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                   <div>
                     <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
                       {GAME_LABELS[g]}
-                      <button onClick={e => { e.stopPropagation(); setDetailGame(g) }} style={{
+                      <button onClick={e => { e.stopPropagation(); setDetail({ label: GAME_LABELS[g], color: GAME_COLOR[g], text: GAME_DETAIL[g] }) }} style={{
                         width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--muted)',
                         background: 'transparent', color: 'var(--muted)', cursor: 'pointer',
                         fontSize: 11, fontWeight: 800, lineHeight: 1, padding: 0,
@@ -330,10 +330,16 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                       }}>?</button>
                     </p>
                     <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-                      {GAME_DESC[g]}
-                      {blocked && (g === 'jopok' ? ' · 다른 게임 해제 후 선택 가능'
-                        : jopokSelected ? ' · 조폭 해제 후 선택 가능'
-                        : ' · 4인 이상부터 선택 가능')}
+                      {g === 'jopok'
+                        ? <><span style={{ color: '#dc2626', fontWeight: 800 }}>18홀 단독 진행</span>{' · 스킨스 + 벌칙/강탈'}</>
+                        : GAME_DESC[g]}
+                      {blocked && (
+                        <span style={{ color: '#dc2626', fontWeight: 800 }}>
+                          {' · '}{g === 'jopok' ? '다른 게임 해제 후 선택 가능'
+                            : jopokSelected ? '조폭 해제 후 선택 가능'
+                            : '4인 필수'}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div style={{
@@ -388,7 +394,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>
                     {orderedPlayers.length <= 3
-                      ? '후세인 점수 vs 연합군 전원 타수 합. (최하위 1명 제외는 4인 이상부터 선택할 수 있어요)'
+                      ? '후세인 점수 vs 연합군 전원 타수 합. (최하위 1명 제외는 4인 필수)'
                       : husseinMode === '13'
                       ? '후세인 점수 vs 연합군 합 — 단, 그 홀에서 가장 못 친 연합군 1명은 제외하고 합산. 후세인 점수는 비교 인원수만큼 곱함. 상금은 동일(승리 시 인원수만큼 독식, 패배 시 전원 지급)'
                       : '후세인 점수 ×3 vs 연합군 3명 타수 합. 승리 시 ×3 독식, 패배 시 전원 지급'}
@@ -417,7 +423,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
                     {' '}버디 시 나머지 전원 보유금 강탈. 반납금은 그 홀 승자가 독식.
                   </p>
                   <p style={{ fontSize: 11, color: '#b45309', marginTop: 6, lineHeight: 1.5, fontWeight: 600 }}>
-                    18홀 전체에 단독으로 적용돼요(다른 메인 게임과 함께 불가, 단 신페리오·니어·롱기와는 병행 가능). 기본배분은 적용, 버디값은 미적용.
+                    18홀 전체에 단독으로 적용돼요(다른 메인 게임과 함께 불가). 기본배분은 적용, 버디값은 미적용.
                   </p>
                 </div>
               )}
@@ -484,14 +490,22 @@ export default function GameSettings({ room, roomId, myId }: Props) {
 
           {/* 니어·롱기스트 설정 */}
           {([
-            { key: 'nearest' as const, label: '니어리스트', cfg: nearest, setCfg: setNearest },
-            { key: 'longest' as const, label: '롱기스트',   cfg: longest, setCfg: setLongest },
-          ]).map(({ key, label, cfg, setCfg }) => (
+            { key: 'nearest' as const, label: '니어리스트', desc: '온그린 핀 최근접자 Par 이상 시 상금', cfg: nearest, setCfg: setNearest },
+            { key: 'longest' as const, label: '롱기스트',   desc: '페어웨이 안착 최장타자 상금',       cfg: longest, setCfg: setLongest },
+          ]).map(({ key, label, desc, cfg, setCfg }) => (
             <div key={key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <p style={{ fontWeight: 700 }}>{label} 설정</p>
-                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>당첨자가 설정 금액 획득 (진행자가 홀에서 선택)</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                    {label} 설정
+                    <button onClick={() => setDetail({ label, color: EVENT_COLOR[key], text: EVENT_DETAIL[key] })} style={{
+                      width: 18, height: 18, borderRadius: '50%', border: '1.5px solid var(--muted)',
+                      background: 'transparent', color: 'var(--muted)', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 800, lineHeight: 1, padding: 0,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>?</button>
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)' }}>{desc}</p>
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input type="checkbox" checked={cfg.enabled}
@@ -733,7 +747,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
           {/* 팀게임 이월 시 팀 구성 */}
           <div className="card">
             <p style={{ fontWeight: 700, marginBottom: 2 }}>팀게임 이월시 다음게임 팀구성</p>
-            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 판돈 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>무승부로 상금 이월 시 다음 홀 팀 구성 (좌탄우탄·라스베가스)</p>
             <div style={{ display: 'flex', gap: 5 }}>
               {[{ v: true, l: '팀 유지' }, { v: false, l: '팀 재구성' }].map(({ v, l }) => (
                 <button key={l} onClick={() => setTeamCarryKeep(v)} style={{
