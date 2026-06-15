@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import InAppBrowserGuard from '@/components/InAppBrowserGuard'
 
 export const metadata: Metadata = {
   title: '모두의 골프게임',
@@ -15,7 +16,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" style={{ colorScheme: 'light' }}>
-      <body style={{ background: '#f1f5f9', color: '#0f172a' }}>{children}</body>
+      <body style={{ background: '#f1f5f9', color: '#0f172a' }}>
+        <InAppBrowserGuard />
+        {children}
+      </body>
     </html>
   )
 }
