@@ -40,17 +40,17 @@ export default function SupportButton({ variant = 'link' }: { variant?: 'link' |
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       }}>
         <CoffeeIcon size={18} color="#c2410c" />
-        졸린 개발자 응원하기
+        졸고 있는 개발자 응원하기
       </button>
     ) : (
       <button onClick={() => setOpen(true)} style={{
         background: 'none', border: 'none', cursor: 'pointer',
-        color: 'var(--muted)', fontSize: 13, fontWeight: 600,
-        display: 'inline-flex', alignItems: 'center', gap: 6, padding: 4,
+        color: 'var(--muted)', fontSize: 17, fontWeight: 600,
+        display: 'inline-flex', alignItems: 'center', gap: 8, padding: 4,
         textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'var(--border)',
       }}>
-        <CoffeeIcon size={15} color="var(--muted)" />
-        졸린 개발자 응원하기
+        <CoffeeIcon size={20} color="var(--muted)" />
+        졸고 있는 개발자 응원하기
       </button>
     )
 
