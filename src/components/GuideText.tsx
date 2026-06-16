@@ -9,7 +9,7 @@ export const GAME_COLOR: Record<GameType, string> = {
   jootanwootan: '#7c3aed',
   hussein: '#dc2626',
   scratch: '#0891b2',
-  jopok: '#334155',
+  jopok: '#db2777',
   sinperio: '#64748b',
 }
 

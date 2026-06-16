@@ -209,30 +209,32 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
               </radialGradient>
             </defs>
-            {/* 금빛 월계수 — 줄기 + 아몬드형 잎이 메달 양옆으로 펼쳐짐 */}
+            {/* 금빛 월계수 — 줄기를 따라 잎이 좌우 번갈아(지그재그) 달림 */}
             <g stroke="#b8860b" strokeWidth="2.2" strokeLinecap="round" fill="none">
-              <path d="M52 76 C32 73 17 60 14 41 C12.6 31 15 21 22 14" />
-              <path d="M66 76 C86 73 101 60 104 41 C105.4 31 103 21 96 14" />
+              <path d="M53 75 C34 70 20 56 18 38 C17 30 18 23 24 12" />
+              <path d="M65 75 C84 70 98 56 100 38 C101 30 100 23 94 12" />
             </g>
-            {/* 왼쪽 잎 (아래→위) */}
+            {/* 왼쪽 가지 잎 (아래→위, 좌우 번갈아) */}
             <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(47 73) rotate(-128)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(36 68) rotate(-108)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(26 60) rotate(-86)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(19 49) rotate(-64)" />
-              <path d="M0 0 C -2.8 -3.4 -2.4 -8.2 0 -11.6 C 2.4 -8.2 2.8 -3.4 0 0 Z" transform="translate(15 38) rotate(-44)" />
-              <path d="M0 0 C -2.6 -3.1 -2.2 -7.6 0 -10.8 C 2.2 -7.6 2.6 -3.1 0 0 Z" transform="translate(15 27) rotate(-26)" />
-              <path d="M0 0 C -2.3 -2.7 -2 -6.6 0 -9.4 C 2 -6.6 2.3 -2.7 0 0 Z" transform="translate(19 18) rotate(-10)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(50 72) rotate(-82) scale(1)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(40 64) rotate(12) scale(1)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(31 56) rotate(-66) scale(0.97)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(23 47) rotate(30) scale(0.94)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(18 37) rotate(-46) scale(0.9)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(17 27) rotate(50) scale(0.85)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(20 18) rotate(-22) scale(0.8)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(24 12) rotate(8) scale(0.72)" />
             </g>
-            {/* 오른쪽 잎 (대칭) */}
+            {/* 오른쪽 가지 잎 (대칭) */}
             <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(71 73) rotate(128)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(82 68) rotate(108)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(92 60) rotate(86)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(99 49) rotate(64)" />
-              <path d="M0 0 C -2.8 -3.4 -2.4 -8.2 0 -11.6 C 2.4 -8.2 2.8 -3.4 0 0 Z" transform="translate(103 38) rotate(44)" />
-              <path d="M0 0 C -2.6 -3.1 -2.2 -7.6 0 -10.8 C 2.2 -7.6 2.6 -3.1 0 0 Z" transform="translate(103 27) rotate(26)" />
-              <path d="M0 0 C -2.3 -2.7 -2 -6.6 0 -9.4 C 2 -6.6 2.3 -2.7 0 0 Z" transform="translate(99 18) rotate(10)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(68 72) rotate(82) scale(1)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(78 64) rotate(-12) scale(1)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(87 56) rotate(66) scale(0.97)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(95 47) rotate(-30) scale(0.94)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(100 37) rotate(46) scale(0.9)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(101 27) rotate(-50) scale(0.85)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(98 18) rotate(22) scale(0.8)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(94 12) rotate(-8) scale(0.72)" />
             </g>
             {/* 메달 본체 */}
             <circle cx="59" cy="40" r="25" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.5" />

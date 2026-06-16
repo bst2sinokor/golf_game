@@ -151,7 +151,7 @@ const GAME_TAG_STYLE: Record<string, string> = {
   'hussein':      '#dc2626',
   'lasvegas':     '#d97706',
   'sinperio':     '#64748b',
-  'jopok':        '#334155',
+  'jopok':        '#db2777',
 }
 
 // 버튼 그리드 정의 (par3: TRIPLE·QUAD 제외 / par4: QUAD 제외)
