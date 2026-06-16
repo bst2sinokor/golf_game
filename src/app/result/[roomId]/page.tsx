@@ -22,6 +22,36 @@ function scoreColor(diff: number): string {
   return '#dc2626'                  // 트리플 이상·더블파
 }
 
+// 순위 메달 배지 — 이모지(🥇🥈🥉) 대신 금/은/동 메탈릭 디스크 + 순위 숫자
+function RankBadge({ rank }: { rank: number }) {
+  const P = [
+    { from: '#fce486', to: '#d4af37', ring: '#a87f1e', text: '#5a4500', id: 'medalG' }, // 금
+    { from: '#f1f3f6', to: '#aeb6c0', ring: '#7c828c', text: '#39404a', id: 'medalS' }, // 은
+    { from: '#eab27e', to: '#c4762c', ring: '#8f521b', text: '#4d2a0c', id: 'medalB' }, // 동
+  ]
+  if (rank > 2) {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>
+        {rank + 1}
+      </span>
+    )
+  }
+  const p = P[rank]
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id={p.id} x1="13" y1="2" x2="13" y2="24" gradientUnits="userSpaceOnUse">
+          <stop stopColor={p.from} />
+          <stop offset="1" stopColor={p.to} />
+        </linearGradient>
+      </defs>
+      <circle cx="13" cy="13" r="11" fill={`url(#${p.id})`} stroke={p.ring} strokeWidth="1.5" />
+      <path d="M6 8.5 A 11 11 0 0 1 20 8.5" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+      <text x="13" y="13" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="800" fill={p.text}>{rank + 1}</text>
+    </svg>
+  )
+}
+
 export default function ResultPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params)
   const router = useRouter()
@@ -179,26 +209,30 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
               </radialGradient>
             </defs>
-            {/* 금빛 월계수 — 메달 양옆으로 활짝 펼침 */}
-            <g stroke="#d4af37" strokeWidth="2.4" strokeLinecap="round" fill="none">
-              <path d="M55 78 C30 74 13 58 12 38 C11.5 28 14 19 21 12" />
-              <path d="M63 78 C88 74 105 58 106 38 C106.5 28 104 19 97 12" />
+            {/* 금빛 월계수 — 줄기 + 아몬드형 잎이 메달 양옆으로 펼쳐짐 */}
+            <g stroke="#b8860b" strokeWidth="2.2" strokeLinecap="round" fill="none">
+              <path d="M52 76 C32 73 17 60 14 41 C12.6 31 15 21 22 14" />
+              <path d="M66 76 C86 73 101 60 104 41 C105.4 31 103 21 96 14" />
             </g>
-            <g fill="#e0b84a">
-              {/* 왼쪽 잎 */}
-              <ellipse cx="20" cy="66" rx="6.5" ry="2.8" transform="rotate(-52 20 66)" />
-              <ellipse cx="14" cy="57" rx="6.8" ry="2.9" transform="rotate(-36 14 57)" />
-              <ellipse cx="11.5" cy="47" rx="7" ry="3" transform="rotate(-18 11.5 47)" />
-              <ellipse cx="12" cy="37" rx="7" ry="3" transform="rotate(0 12 37)" />
-              <ellipse cx="15" cy="27" rx="6.8" ry="2.9" transform="rotate(20 15 27)" />
-              <ellipse cx="21" cy="19" rx="6.2" ry="2.7" transform="rotate(40 21 19)" />
-              {/* 오른쪽 잎 (대칭) */}
-              <ellipse cx="98" cy="66" rx="6.5" ry="2.8" transform="rotate(52 98 66)" />
-              <ellipse cx="104" cy="57" rx="6.8" ry="2.9" transform="rotate(36 104 57)" />
-              <ellipse cx="106.5" cy="47" rx="7" ry="3" transform="rotate(18 106.5 47)" />
-              <ellipse cx="106" cy="37" rx="7" ry="3" transform="rotate(0 106 37)" />
-              <ellipse cx="103" cy="27" rx="6.8" ry="2.9" transform="rotate(-20 103 27)" />
-              <ellipse cx="97" cy="19" rx="6.2" ry="2.7" transform="rotate(-40 97 19)" />
+            {/* 왼쪽 잎 (아래→위) */}
+            <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(47 73) rotate(-128)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(36 68) rotate(-108)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(26 60) rotate(-86)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(19 49) rotate(-64)" />
+              <path d="M0 0 C -2.8 -3.4 -2.4 -8.2 0 -11.6 C 2.4 -8.2 2.8 -3.4 0 0 Z" transform="translate(15 38) rotate(-44)" />
+              <path d="M0 0 C -2.6 -3.1 -2.2 -7.6 0 -10.8 C 2.2 -7.6 2.6 -3.1 0 0 Z" transform="translate(15 27) rotate(-26)" />
+              <path d="M0 0 C -2.3 -2.7 -2 -6.6 0 -9.4 C 2 -6.6 2.3 -2.7 0 0 Z" transform="translate(19 18) rotate(-10)" />
+            </g>
+            {/* 오른쪽 잎 (대칭) */}
+            <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(71 73) rotate(128)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(82 68) rotate(108)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(92 60) rotate(86)" />
+              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(99 49) rotate(64)" />
+              <path d="M0 0 C -2.8 -3.4 -2.4 -8.2 0 -11.6 C 2.4 -8.2 2.8 -3.4 0 0 Z" transform="translate(103 38) rotate(44)" />
+              <path d="M0 0 C -2.6 -3.1 -2.2 -7.6 0 -10.8 C 2.2 -7.6 2.6 -3.1 0 0 Z" transform="translate(103 27) rotate(26)" />
+              <path d="M0 0 C -2.3 -2.7 -2 -6.6 0 -9.4 C 2 -6.6 2.3 -2.7 0 0 Z" transform="translate(99 18) rotate(10)" />
             </g>
             {/* 메달 본체 */}
             <circle cx="59" cy="40" r="25" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.5" />
@@ -234,8 +268,8 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 border: isMe ? '1px solid rgba(59,130,246,.3)' : '1px solid transparent',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 18, minWidth: 28 }}>
-                    {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : '  '}
+                  <span style={{ minWidth: 28, display: 'inline-flex', justifyContent: 'center' }}>
+                    <RankBadge rank={rank} />
                   </span>
                   <div>
                     <span style={{ fontWeight: 700, fontSize: 16 }}>{p.name}{isMe ? ' (나)' : ''}</span>
@@ -361,10 +395,9 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
       <button className="btn btn-green" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
         스코어보드 보기
       </button>
-      <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push('/')}>
-        🏠 홈으로
-      </button>
-      <SupportButton variant="button" />
+      <div style={{ textAlign: 'center', marginTop: 18 }}>
+        <SupportButton variant="link" />
+      </div>
     </div>
   )
 }
