@@ -103,7 +103,8 @@ export interface HoleGameResult {
   loserPays: number        // 패자 1인당 부담금
   carry: boolean           // 이월 여부
   carryTotal: number       // 현재까지 누적 이월 판돈
-  detail: string           // 표시용 설명
+  detail: string           // 표시용 설명 (항목별 ' · ' 구분, 각 항목은 그 항목 금액만)
+  summary?: string         // 하단 강조 푸터 ("승자 : +총액" 또는 "이월금액 : 총액")
   teams?: [string[], string[]]  // 이 홀에 사용된 두 팀 구성 (팀게임, 이월 팀 유지용)
 }
 

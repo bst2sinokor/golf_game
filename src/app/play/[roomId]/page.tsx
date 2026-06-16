@@ -773,13 +773,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     {GAME_LABELS[r.game]}
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                    {resolveNames(r.detail, room.players).split(' · ').map((line, k) => (
+                    {resolveNames(r.detail, room.players).split(/\n| · /).map((line, k) => (
                       <div key={k} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
                         <span style={{ color: 'var(--muted)', flexShrink: 0 }}>•</span>
                         <span>{line}</span>
                       </div>
                     ))}
                   </div>
+                  {r.summary && (
+                    <div style={{ marginTop: 5, paddingTop: 5, borderTop: '1px dashed #e2e8f0', textAlign: 'right', fontSize: 14, fontWeight: 800, color: r.carry ? '#dc2626' : '#16a34a' }}>
+                      {resolveNames(r.summary, room.players)}
+                    </div>
+                  )}
                 </div>
               ))}
               {(results.buddyResults[viewHole]?.length ?? 0) > 0 && (
@@ -820,13 +825,6 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 </div>
               )}
             </div>
-            {holeResults.some(r => r.carry) && (
-              <div style={{ background: '#fef2f2', padding: '11px 14px', borderTop: '1px solid #fecaca', textAlign: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>
-                  이월금액: {holeResults.filter(r => r.carry).reduce((s, r) => s + (r.carryTotal || 0), 0).toLocaleString()}원
-                </span>
-              </div>
-            )}
           </div>
         )}
 
@@ -1112,13 +1110,18 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                       {GAME_LABELS[r.game]}
                     </p>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
-                      {resolveNames(r.detail, room.players).split(' · ').map((line, k) => (
+                      {resolveNames(r.detail, room.players).split(/\n| · /).map((line, k) => (
                         <div key={k} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
                           <span style={{ color: 'var(--muted)', flexShrink: 0 }}>•</span>
                           <span>{line}</span>
                         </div>
                       ))}
                     </div>
+                    {r.summary && (
+                      <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #e2e8f0', textAlign: 'right', fontSize: 14, fontWeight: 800, color: r.carry ? '#dc2626' : '#16a34a' }}>
+                        {resolveNames(r.summary, room.players)}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (results.buddyResults[viewHole]?.length ?? 0) === 0 && (results.oecdResults[viewHole]?.length ?? 0) === 0 && (results.eventResults[viewHole]?.length ?? 0) === 0 ? (
@@ -1164,13 +1167,6 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
                     </p>
                   ))}
-                </div>
-              )}
-              {holeResults.some(r => r.carry) && (
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '11px 12px', textAlign: 'center', marginBottom: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>
-                    이월금액: {holeResults.filter(r => r.carry).reduce((s, r) => s + (r.carryTotal || 0), 0).toLocaleString()}원
-                  </span>
                 </div>
               )}
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>

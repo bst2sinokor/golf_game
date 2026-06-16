@@ -655,35 +655,49 @@ export function calcAllResults(room: Room): {
           return r.carryTotal  // 스트로크: 승자 상금 = 설정금액
         }
 
+        const perPerson = !!result.teams  // 팀게임은 /인 표기
         if (result.carry) {
           // 무승부 → 이번 홀 상금 풀을 이월에 누적 (carryApplies면 기존 이월 유지)
-          carry = (carryApplies ? carry : 0) + poolOf(result)
+          const add = poolOf(result)
+          carry = (carryApplies ? carry : 0) + add
           carryType = cfg.type
           carryTeams = result.teams ?? null
-          result.detail = `이월 (누적 ${carry.toLocaleString()}원)`
+          // 항목은 '이번 홀 상금'만, 총 이월금은 푸터로
+          result.detail = perPerson
+            ? `동타 이월상금 (+${result.loserPays.toLocaleString()}원/인)`
+            : `동타 이월상금 (+${add.toLocaleString()}원)`
+          result.summary = `이월금액 : ${carry.toLocaleString()}원`
         } else {
           // 승자 결정 → 적립 이월금 지급 (전달 조건 충족 시) 후 이번 홀 자체 정산
+          const losers = holePlayers.filter(id => !result!.winners.includes(id))
+          const baseGain = result.winners.length === 0 ? 0
+            : (cfg.type === 'stroke'
+                ? result.loserPays / result.winners.length
+                : result.loserPays * losers.length / result.winners.length)
+          let carriedShare = 0
           if (carryApplies && carry > 0 && result.winners.length > 0) {
-            const share = carry / result.winners.length
+            carriedShare = carry / result.winners.length
             for (const wid of result.winners) {
-              gameDeltas[wid] += share
-              walletGains[wid] += share
+              gameDeltas[wid] += carriedShare
+              walletGains[wid] += carriedShare
             }
-            result.detail += ` · 이월 (+${carry.toLocaleString()}원)`
+            result.detail += perPerson
+              ? ` · 이월금액 (+${carriedShare.toLocaleString()}원/인)`
+              : ` · 이월금액 (+${carry.toLocaleString()}원)`
           }
           carry = 0; carryType = null; carryTeams = null
 
-          const losers = holePlayers.filter(id => !result!.winners.includes(id))
           for (const wid of result.winners) {
-            // 스트로크: 승자는 홀당 설정금액만 수령. 그 외 게임: 패자 수 비례 수령
-            const gain = cfg.type === 'stroke'
-              ? result.loserPays / result.winners.length
-              : result.loserPays * losers.length / result.winners.length
-            gameDeltas[wid] += gain
-            walletGains[wid] += gain  // 승리금은 은행에서 지갑으로
+            gameDeltas[wid] += baseGain
+            walletGains[wid] += baseGain  // 승리금은 은행에서 지갑으로
           }
           for (const lid of losers) {
             gameDeltas[lid] -= result.loserPays  // 패배금은 은행 부담 (지갑 불변)
+          }
+          // 푸터: 승자(들) : +1인 총액
+          if (result.winners.length > 0) {
+            const tot = baseGain + carriedShare
+            result.summary = `${result.winners.join('·')} : +${tot.toLocaleString()}원${perPerson ? '/인' : ''}`
           }
         }
         results.push(result)
@@ -723,10 +737,14 @@ export function calcAllResults(room: Room): {
     // 조폭 스킨스 (홀별 순차: ① 반납 → ② 최저타 승자 귀속(동타 이월) → ③ 버디 강탈)
     if (jopokCfg && jopokCfg.holes.includes(h) && holePlayers.length > 0) {
       const pname = (id: string) => room.players[id]?.name ?? id
-      const lines: string[] = []
+      const before: Record<string, number> = {}
+      holePlayers.forEach(id => { before[id] = jopokHold[id] })
+      const prevCarry = jopokCarry            // 이 홀 진입 전 이월금
+      const penaltyLines: string[] = []
+      const stealLines: string[] = []
       // 이 홀에 버디(이상)이 있으면 강탈로 전원 보유금이 어차피 넘어가므로 반납(페널티)은 무의미 → 계산·표시 생략
       const birdies = holePlayers.filter(id => (scores[id] ?? Infinity) <= holePar - 1)
-      // ① 반납: 그동안 딴 누적 보유금의 일정 %를 토해냄 (홀 설정금액 단위 올림, 보유 한도 내). 단, 버디 강탈 홀에서는 생략.
+      // ① 반납: 그동안 딴 보유금의 일정 %를 토해냄 (홀 설정금액 단위 올림, 보유 한도 내). 단, 버디 강탈 홀에서는 생략.
       let pool = 0
       if (birdies.length === 0) {
         for (const pid of holePlayers) {
@@ -739,7 +757,7 @@ export function calcAllResults(room: Room): {
             let amt = Math.ceil((jopokHold[pid] * pct) / jopokBet) * jopokBet  // 설정금액 단위 올림
             amt = Math.min(amt, jopokHold[pid])                                // 보유 한도
             jopokHold[pid] -= amt; pool += amt
-            lines.push(`${pname(pid)} 반납 (-${amt.toLocaleString()}원)`)
+            penaltyLines.push(`${pname(pid)} 반납 (-${amt.toLocaleString()}원)`)
           }
         }
       }
@@ -750,8 +768,7 @@ export function calcAllResults(room: Room): {
       let jopokWinner: string | null = null
       if (lowest.length === 1) { jopokWinner = lowest[0]; jopokHold[jopokWinner] += skinPot; jopokCarry = 0 }
       else { jopokCarry = skinPot }
-      // ③ 버디(이상) 강탈: 버디한 사람이 나머지 전원의 보유금을 가져옴
-      //    단독 승자 홀이면 버디한 사람들이 균등 분배, 동타로 이월되는 홀이면 강탈금도 함께 이월
+      // ③ 버디(이상) 강탈: 단독 승자 홀이면 버디한 사람들이 균등 분배, 동타로 이월되는 홀이면 강탈금도 함께 이월
       if (birdies.length > 0) {
         let stealPot = 0
         for (const pid of holePlayers) {
@@ -763,21 +780,27 @@ export function calcAllResults(room: Room): {
             const share = Math.floor(stealPot / birdies.length)
             let rem = stealPot - share * birdies.length
             for (const bid of birdies) { jopokHold[bid] += share + (rem > 0 ? 1 : 0); if (rem > 0) rem-- }
-            lines.push(`버디 강탈 ${birdies.map(pname).join('·')} (+${stealPot.toLocaleString()}원)`)
+            stealLines.push(`버디 강탈 ${birdies.map(pname).join('·')} (+${stealPot.toLocaleString()}원)`)
           } else {
-            // 1위 동타라 이월되는 홀 → 강탈금도 다음 홀로 이월
             jopokCarry += stealPot
-            lines.push(`버디 강탈금 이월 (+${stealPot.toLocaleString()}원)`)
+            stealLines.push(`버디 강탈금 이월 (+${stealPot.toLocaleString()}원)`)
           }
         }
       }
-      let detail = jopokWinner
-        ? `${pname(jopokWinner)} 획득 (+${skinPot.toLocaleString()}원)`
-        : `동타 이월 (누적 ${jopokCarry.toLocaleString()}원)`
-      if (lines.length) detail += ' · ' + lines.join(' · ')
+      // 항목(불릿)은 각 항목 금액만, 누적/최종은 푸터(summary)로
+      const items: string[] = []
+      items.push(jopokWinner
+        ? `${pname(jopokWinner)} 승리! (+${jopokBet.toLocaleString()}원)`
+        : `동타 이월상금 (+${jopokBet.toLocaleString()}원)`)
+      if (prevCarry > 0) items.push(`이월금액 (+${prevCarry.toLocaleString()}원)`)
+      items.push(...penaltyLines, ...stealLines)
+      const detail = items.join(' · ')
+      const summary = jopokWinner
+        ? `${pname(jopokWinner)} : +${(jopokHold[jopokWinner] - before[jopokWinner]).toLocaleString()}원`
+        : `이월금액 : ${jopokCarry.toLocaleString()}원`
       results.push({
         game: 'jopok', winners: jopokWinner ? [jopokWinner] : [], loserPays: 0,
-        carry: !jopokWinner, carryTotal: jopokWinner ? 0 : jopokCarry, detail,
+        carry: !jopokWinner, carryTotal: jopokWinner ? 0 : jopokCarry, detail, summary,
       })
     }
 

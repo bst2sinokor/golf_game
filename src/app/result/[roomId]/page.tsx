@@ -275,12 +275,17 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
               {relevantResults.map((r, i) => (
                 <div key={i} style={{ fontSize: 12, paddingLeft: 10, borderLeft: '2px solid var(--border)', marginBottom: 5 }}>
                   <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{GAME_LABELS[r.game]}</span>
-                  {resolveNames(r.detail, room.players).split(' · ').map((line, k) => (
+                  {resolveNames(r.detail, room.players).split(/\n| · /).map((line, k) => (
                     <div key={k} style={{ display: 'flex', gap: 5, alignItems: 'baseline', paddingLeft: 2 }}>
                       <span style={{ color: 'var(--muted)', flexShrink: 0 }}>•</span>
                       <span>{line}</span>
                     </div>
                   ))}
+                  {r.summary && (
+                    <div style={{ textAlign: 'right', fontWeight: 800, color: r.carry ? '#dc2626' : '#16a34a', marginTop: 2 }}>
+                      {resolveNames(r.summary, room.players)}
+                    </div>
+                  )}
                 </div>
               ))}
               {buddies.map((b, i) => (
