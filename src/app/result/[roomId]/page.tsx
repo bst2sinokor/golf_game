@@ -39,7 +39,7 @@ function RankBadge({ rank }: { rank: number }) {
   const p = P[rank]
   const big = rank === 0  // 1등은 주위 반짝임 공간 확보
   return (
-    <svg width={big ? 34 : 26} height={big ? 34 : 26} viewBox={big ? '-4 -4 34 34' : '0 0 26 26'} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg width={big ? 42 : 26} height={big ? 42 : 26} viewBox={big ? '-8 -8 42 42' : '0 0 26 26'} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id={p.id} x1="13" y1="2" x2="13" y2="24" gradientUnits="userSpaceOnUse">
           <stop stopColor={p.from} />
@@ -51,10 +51,19 @@ function RankBadge({ rank }: { rank: number }) {
       <text x="13" y="13" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="800" fill={p.text}>{rank + 1}</text>
       {big && (
         <g fill="#ffd84d">
-          {([[13,-1,0,1.4],[26.5,8.5,0.5,1.8],[20.5,23.5,0.9,1.3],[5.5,23.5,0.3,1.7],[-0.5,8.5,0.7,1.5]] as [number,number,number,number][]).map(([x,y,d,dur],i) => (
+          {/* 메달 주위, 각자 다른 거리·크기·속도로 반짝 */}
+          {([
+            [13, -4, 1.3, 0, 1.5],
+            [32, 9, 1.05, 0.6, 1.9],
+            [19, 27, 1.15, 1.0, 1.3],
+            [3, 29, 0.95, 0.35, 1.75],
+            [-4, 17, 1.35, 0.8, 1.55],
+          ] as [number,number,number,number,number][]).map(([x,y,s,d,dur],i) => (
             <g key={i} transform={`translate(${x} ${y})`}>
-              <path className="medal-shine" style={{ animationDelay: `${d}s`, animationDuration: `${dur}s` }}
-                d="M0 -3.4 Q0.55 -0.55 3.4 0 Q0.55 0.55 0 3.4 Q-0.55 0.55 -3.4 0 Q-0.55 -0.55 0 -3.4 Z" />
+              <g transform={`scale(${s})`}>
+                <path className="medal-shine" style={{ animationDelay: `${d}s`, animationDuration: `${dur}s` }}
+                  d="M0 -4 Q0.65 -0.65 4 0 Q0.65 0.65 0 4 Q-0.65 0.65 -4 0 Q-0.65 -0.65 0 -4 Z" />
+              </g>
             </g>
           ))}
         </g>
@@ -209,31 +218,49 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-          {/* 월계수 이미지(뒤) + 골프 메달(중앙) — 월계수 PNG는 /public/laurel.png 추가 후 연결 */}
-          <div style={{ position: 'relative', width: 150, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/laurel.png" alt="" aria-hidden="true"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} />
-            <svg width="80" height="80" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산" style={{ position: 'relative' }}>
-              <defs>
-                <linearGradient id="medal" x1="42" y1="10" x2="42" y2="74" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#1f9d54" />
-                  <stop offset="1" stopColor="#13532e" />
-                </linearGradient>
-                <radialGradient id="sheen" cx="0.35" cy="0.28" r="0.85">
-                  <stop stopColor="#ffffff" stopOpacity="0.20" />
-                  <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <circle cx="42" cy="42" r="32" fill="url(#medal)" stroke="#d4af37" strokeWidth="3" />
-              <circle cx="42" cy="42" r="32" fill="url(#sheen)" />
-              <circle cx="42" cy="42" r="26.5" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />
-              <line x1="36" y1="29" x2="36" y2="56" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" />
-              <path d="M36 28 L52 33 L36 38 Z" fill="#fde047" />
-              <circle cx="46" cy="55" r="3.4" fill="#ffffff" />
-              <path d="M28 57 Q42 53 56 57" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-            </svg>
-          </div>
+          <svg width="150" height="130" viewBox="0 0 176 152" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산">
+            <defs>
+              <linearGradient id="medal" x1="88" y1="54" x2="88" y2="114" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#1f9d54" /><stop offset="1" stopColor="#13532e" />
+              </linearGradient>
+              <radialGradient id="sheen" cx="0.35" cy="0.28" r="0.85">
+                <stop stopColor="#ffffff" stopOpacity="0.20" /><stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+              <linearGradient id="goldLeaf" x1="0" y1="0" x2="1" y2="0.7">
+                <stop offset="0" stopColor="#f6dd84" /><stop offset="0.55" stopColor="#cf9a1c" /><stop offset="1" stopColor="#7e5406" />
+              </linearGradient>
+              <linearGradient id="goldV" x1="88" y1="30" x2="88" y2="150" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#fbe89a" /><stop offset="0.5" stopColor="#dca81f" /><stop offset="1" stopColor="#8a5d08" />
+              </linearGradient>
+            </defs>
+            {/* 월계수 줄기 */}
+            <g stroke="url(#goldV)" strokeWidth="2.4" strokeLinecap="round" fill="none">
+              <path d="M85 141 C55 135 33 112 33 86 C33 66 43 50 61 39" />
+              <path d="M91 141 C121 135 143 112 143 86 C143 66 133 50 115 39" />
+            </g>
+            {/* 월계수 잎 (메달 둘레) */}
+            <g fill="url(#goldLeaf)" stroke="#7e5406" strokeWidth="0.5">
+              {([
+                [76.4,140.8,192,1],[61.7,135.4,208,0.98],[49.1,126.3,224,0.95],[39.5,114,240,0.92],[33.7,99.5,256,0.88],
+                [32.1,84,272,0.85],[34.7,68.7,288,0.81],[41.6,54.7,304,0.77],[52,43.1,320,0.72],[65.2,34.8,336,0.67],
+                [99.6,140.8,168,1],[114.3,135.4,152,0.98],[126.9,126.3,136,0.95],[136.5,114,120,0.92],[142.3,99.5,104,0.88],
+                [143.9,84,88,0.85],[141.3,68.7,72,0.81],[134.4,54.7,56,0.77],[124,43.1,40,0.72],[110.8,34.8,24,0.67],
+              ] as [number,number,number,number][]).map(([x,y,r,s],i) => (
+                <path key={i} d="M0 0 C -3.2 -4 -2.8 -9.6 0 -14 C 2.8 -9.6 3.2 -4 0 0 Z"
+                  transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`} />
+              ))}
+            </g>
+            {/* 바닥 매듭 점 */}
+            <g fill="url(#goldV)"><circle cx="84" cy="143" r="2" /><circle cx="92" cy="143" r="2" /></g>
+            {/* 골프 메달 (중앙) */}
+            <circle cx="88" cy="84" r="30" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.8" />
+            <circle cx="88" cy="84" r="30" fill="url(#sheen)" />
+            <circle cx="88" cy="84" r="25" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />
+            <line x1="82" y1="71" x2="82" y2="97" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" />
+            <path d="M82 70 L97 75 L82 80 Z" fill="#fde047" />
+            <circle cx="92" cy="96" r="3.2" fill="#ffffff" />
+            <path d="M74 98 Q88 94 102 98" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+          </svg>
         </div>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>최종 정산</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>방 코드: {roomId}</p>
