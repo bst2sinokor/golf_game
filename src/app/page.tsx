@@ -140,7 +140,7 @@ export default function Home() {
           동반자들이 각자 폰에서 참가합니다.
         </p>
 
-        <div style={{ textAlign: 'center', marginTop: 18 }}>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
           <SupportButton variant="link" />
         </div>
       </div>
