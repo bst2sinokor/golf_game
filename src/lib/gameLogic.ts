@@ -588,7 +588,8 @@ export function calcAllResults(room: Room): {
   const jopokCfg = room.config.games.find(g => g.type === 'jopok')
   const jopokBet = jopokCfg?.betPerHole ?? 0
   const jopokMode = room.config.jopokPenalty ?? 'double'
-  const jopokHold: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, 0]))
+  // 보유금액 = 기본배분 + 누적 상금 (반납·강탈 기준이 보유금액 전체이므로 기본배분에서 시작)
+  const jopokHold: Record<string, number> = Object.fromEntries(playerIds.map(id => [id, baseDistribution]))
   let jopokCarry = 0
 
   // 이월 추적 (총 상금 누적). 전달 규칙:
@@ -854,10 +855,11 @@ export function calcAllResults(room: Room): {
   }
 
   // 조폭 누적 보유금을 지갑·손익에 반영 (스킨은 은행 부담, 반납·강탈은 플레이어 간 이동)
+  // jopokHold가 기본배분에서 시작했으므로, 기본배분은 net에서 별도 합산됨 → 중복 방지 위해 차감
   if (jopokCfg) {
     for (const pid of playerIds) {
-      walletGains[pid] += jopokHold[pid]
-      gameDeltas[pid]  += jopokHold[pid]
+      walletGains[pid] += jopokHold[pid] - baseDistribution
+      gameDeltas[pid]  += jopokHold[pid] - baseDistribution
     }
   }
 
