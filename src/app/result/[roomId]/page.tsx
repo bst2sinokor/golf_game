@@ -48,6 +48,12 @@ function RankBadge({ rank }: { rank: number }) {
       <circle cx="13" cy="13" r="11" fill={`url(#${p.id})`} stroke={p.ring} strokeWidth="1.5" />
       <path d="M6 8.5 A 11 11 0 0 1 20 8.5" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="1.3" fill="none" strokeLinecap="round" />
       <text x="13" y="13" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="800" fill={p.text}>{rank + 1}</text>
+      {rank === 0 && (
+        <g fill="#ffffff">
+          <path className="medal-shine" d="M19 3 Q19.5 5.2 21.7 5.7 Q19.5 6.2 19 8.4 Q18.5 6.2 16.3 5.7 Q18.5 5.2 19 3 Z" />
+          <path className="medal-shine medal-shine-2" d="M5.5 16 Q5.9 17.6 7.5 18 Q5.9 18.4 5.5 20 Q5.1 18.4 3.5 18 Q5.1 17.6 5.5 16 Z" />
+        </g>
+      )}
     </svg>
   )
 }
@@ -197,54 +203,55 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-          <svg width="118" height="86" viewBox="0 0 118 86" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+          <svg width="156" height="150" viewBox="0 0 200 192" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산">
             <defs>
-              <linearGradient id="medal" x1="59" y1="13" x2="59" y2="65" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#1f9d54" />
-                <stop offset="1" stopColor="#13532e" />
+              <linearGradient id="goldV" x1="100" y1="22" x2="100" y2="184" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#fbe89a" />
+                <stop offset="0.5" stopColor="#dca81f" />
+                <stop offset="1" stopColor="#8a5d08" />
               </linearGradient>
-              <radialGradient id="sheen" cx="0.35" cy="0.28" r="0.85">
-                <stop stopColor="#ffffff" stopOpacity="0.20" />
-                <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+              <linearGradient id="goldLeaf" x1="0" y1="0" x2="1" y2="0.7">
+                <stop offset="0" stopColor="#f6dd84" />
+                <stop offset="0.55" stopColor="#cf9a1c" />
+                <stop offset="1" stopColor="#7e5406" />
+              </linearGradient>
+              <radialGradient id="starG" cx="0.5" cy="0.4" r="0.75">
+                <stop offset="0" stopColor="#fff6cf" />
+                <stop offset="0.5" stopColor="#f0c63b" />
+                <stop offset="1" stopColor="#b07d12" />
               </radialGradient>
             </defs>
-            {/* 금빛 월계수 — 줄기를 따라 잎이 좌우 번갈아(지그재그) 달림 */}
-            <g stroke="#b8860b" strokeWidth="2.2" strokeLinecap="round" fill="none">
-              <path d="M53 75 C34 70 20 56 18 38 C17 30 18 23 24 12" />
-              <path d="M65 75 C84 70 98 56 100 38 C101 30 100 23 94 12" />
+            {/* 줄기 (잎 뒤) */}
+            <g stroke="url(#goldV)" strokeWidth="2.6" strokeLinecap="round" fill="none">
+              <path d="M95 156 C58 150 36 120 40 86 C42 66 52 52 70 44" />
+              <path d="M105 156 C142 150 164 120 160 86 C158 66 148 52 130 44" />
             </g>
-            {/* 왼쪽 가지 잎 (아래→위, 좌우 번갈아) */}
-            <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(50 72) rotate(-82) scale(1)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(40 64) rotate(12) scale(1)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(31 56) rotate(-66) scale(0.97)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(23 47) rotate(30) scale(0.94)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(18 37) rotate(-46) scale(0.9)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(17 27) rotate(50) scale(0.85)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(20 18) rotate(-22) scale(0.8)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(24 12) rotate(8) scale(0.72)" />
+            {/* 월계수 잎 (좌·우, 원형으로 펼침) */}
+            <g fill="url(#goldLeaf)" stroke="#7e5406" strokeWidth="0.5">
+              {([
+                [89.9,155.1,190,1],[74.6,150.1,206,0.97],[61.2,141.1,222,0.94],[50.8,128.7,238,0.9],[44.2,114,254,0.86],
+                [42,98,270,0.82],[44.2,82,286,0.78],[50.8,67.3,302,0.74],[61.2,54.9,318,0.7],[74.6,45.9,334,0.66],
+                [110.1,155.1,170,1],[125.4,150.1,154,0.97],[138.8,141.1,138,0.94],[149.2,128.7,122,0.9],[155.8,114,106,0.86],
+                [158,98,90,0.82],[155.8,82,74,0.78],[149.2,67.3,58,0.74],[138.8,54.9,42,0.7],[125.4,45.9,26,0.66],
+              ] as [number,number,number,number][]).map(([x,y,r,s],i) => (
+                <path key={i} d="M0 0 C -3.6 -4.6 -3.2 -11 0 -16 C 3.2 -11 3.6 -4.6 0 0 Z"
+                  transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`} />
+              ))}
             </g>
-            {/* 오른쪽 가지 잎 (대칭) */}
-            <g fill="#e3bb4d" stroke="#b8860b" strokeWidth="0.6">
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(68 72) rotate(82) scale(1)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(78 64) rotate(-12) scale(1)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(87 56) rotate(66) scale(0.97)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(95 47) rotate(-30) scale(0.94)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(100 37) rotate(46) scale(0.9)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(101 27) rotate(-50) scale(0.85)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(98 18) rotate(22) scale(0.8)" />
-              <path d="M0 0 C -3 -3.6 -2.6 -8.8 0 -12.5 C 2.6 -8.8 3 -3.6 0 0 Z" transform="translate(94 12) rotate(-8) scale(0.72)" />
+            {/* 상단 별 5개 */}
+            <g fill="url(#starG)" stroke="#b07d12" strokeWidth="0.5">
+              {([[100,15,0.9],[80,20,0.66],[120,20,0.66],[63,30,0.5],[137,30,0.5]] as [number,number,number][]).map(([x,y,s],i) => (
+                <path key={i} d="M0 -10 L2.47 -3.4 L9.51 -3.09 L3.99 1.3 L5.88 8.09 L0 4.2 L-5.88 8.09 L-3.99 1.3 L-9.51 -3.09 L-2.47 -3.4 Z"
+                  transform={`translate(${x} ${y}) scale(${s})`} />
+              ))}
             </g>
-            {/* 메달 본체 */}
-            <circle cx="59" cy="40" r="25" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.5" />
-            <circle cx="59" cy="40" r="25" fill="url(#sheen)" />
-            <circle cx="59" cy="40" r="20.5" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />
-            {/* 골프 깃발 엠블럼 */}
-            <line x1="54" y1="29" x2="54" y2="50" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
-            <path d="M54 28.5 L67 32.5 L54 36.5 Z" fill="#fde047" />
-            <circle cx="62" cy="49.5" r="2.9" fill="#ffffff" />
-            <path d="M47 51.5 Q59 48 71 51.5" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="2" fill="none" strokeLinecap="round" />
+            {/* 하단 리본 */}
+            <g stroke="#7e5406" strokeWidth="0.5">
+              <path d="M93 158 L58 151 L64 168 L97 169 Z" fill="#a9760f" />
+              <path d="M107 158 L142 151 L136 168 L103 169 Z" fill="#a9760f" />
+              <path d="M72 154 H128 V169 L100 177 L72 169 Z" fill="url(#goldV)" />
+            </g>
           </svg>
         </div>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>최종 정산</h1>

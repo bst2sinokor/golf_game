@@ -52,6 +52,18 @@ body {
 .btn-red     { background: var(--red);   color: #fff; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
+/* 1등 금메달 반짝임 */
+@keyframes medalTwinkle {
+  0%, 100% { opacity: .15; transform: scale(.55); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+.medal-shine {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: medalTwinkle 1.5s ease-in-out infinite;
+}
+.medal-shine-2 { animation-delay: .55s; }
+
 input[type="text"], input[type="number"], select {
   background: #f8fafc;
   border: 1px solid var(--border);
