@@ -750,7 +750,8 @@ export function calcAllResults(room: Room): {
       let jopokWinner: string | null = null
       if (lowest.length === 1) { jopokWinner = lowest[0]; jopokHold[jopokWinner] += skinPot; jopokCarry = 0 }
       else { jopokCarry = skinPot }
-      // ③ 버디(이상) 강탈: 버디한 사람이 나머지 전원의 보유금을 가져옴 (버디 여럿이면 균등 분배)
+      // ③ 버디(이상) 강탈: 버디한 사람이 나머지 전원의 보유금을 가져옴
+      //    단독 승자 홀이면 버디한 사람들이 균등 분배, 동타로 이월되는 홀이면 강탈금도 함께 이월
       if (birdies.length > 0) {
         let stealPot = 0
         for (const pid of holePlayers) {
@@ -758,10 +759,16 @@ export function calcAllResults(room: Room): {
           if (jopokHold[pid] > 0) { stealPot += jopokHold[pid]; jopokHold[pid] = 0 }
         }
         if (stealPot > 0) {
-          const share = Math.floor(stealPot / birdies.length)
-          let rem = stealPot - share * birdies.length
-          for (const bid of birdies) { jopokHold[bid] += share + (rem > 0 ? 1 : 0); if (rem > 0) rem-- }
-          lines.push(`버디 강탈 ${birdies.map(pname).join('·')} (+${stealPot.toLocaleString()}원)`)
+          if (jopokWinner) {
+            const share = Math.floor(stealPot / birdies.length)
+            let rem = stealPot - share * birdies.length
+            for (const bid of birdies) { jopokHold[bid] += share + (rem > 0 ? 1 : 0); if (rem > 0) rem-- }
+            lines.push(`버디 강탈 ${birdies.map(pname).join('·')} (+${stealPot.toLocaleString()}원)`)
+          } else {
+            // 1위 동타라 이월되는 홀 → 강탈금도 다음 홀로 이월
+            jopokCarry += stealPot
+            lines.push(`버디 강탈금 이월 (+${stealPot.toLocaleString()}원)`)
+          }
         }
       }
       let detail = jopokWinner
