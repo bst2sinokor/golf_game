@@ -246,8 +246,8 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 [99.6,140.8,168,1],[114.3,135.4,152,0.98],[126.9,126.3,136,0.95],[136.5,114,120,0.92],[142.3,99.5,104,0.88],
                 [143.9,84,88,0.85],[141.3,68.7,72,0.81],[134.4,54.7,56,0.77],[124,43.1,40,0.72],[110.8,34.8,24,0.67],
               ] as [number,number,number,number][]).map(([x,y,r,s],i) => (
-                <path key={i} d="M0 0 C -3.2 -4 -2.8 -9.6 0 -14 C 2.8 -9.6 3.2 -4 0 0 Z"
-                  transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`} />
+                <path key={i} d="M0 0 C -3.6 -4.6 -3.2 -11 0 -16 C 3.2 -11 3.6 -4.6 0 0 Z"
+                  transform={`translate(${x} ${y}) rotate(${r + (i % 2 ? -16 : 16)}) scale(${s})`} />
               ))}
             </g>
             {/* 바닥 매듭 점 */}
