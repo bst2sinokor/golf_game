@@ -609,6 +609,9 @@ export function calcAllResults(room: Room): {
     const results: HoleGameResult[] = []
     // 이 홀에 실제로 점수를 입력한 플레이어만 참여 (중간 참여자는 합류 전 홀의 정산·버디·OECD에서 제외)
     const holePlayers = playerIds.filter(id => scores[id] != null)
+    // 진행 중인 현재 홀(또는 이후)은 전원 입력 전까지 정산 보류
+    // — 일부만 입력된 상태에서 임시 승자·반납/강탈이 잡혀 보유금액이 출렁이는 것 방지 (조폭 등)
+    if (h >= room.currentHole && holePlayers.length < playerIds.length) continue
     const holeRoom: Room = { ...room, players: Object.fromEntries(holePlayers.map(id => [id, room.players[id]])) }
 
     for (const cfg of room.config.games) {
