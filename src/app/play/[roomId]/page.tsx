@@ -772,8 +772,13 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, letterSpacing: '.3px' }}>
                     {GAME_LABELS[r.game]}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'pre-line' }}>
-                    {resolveNames(r.detail, room.players)}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                    {resolveNames(r.detail, room.players).split(' · ').map((line, k) => (
+                      <div key={k} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                        <span style={{ color: 'var(--muted)', flexShrink: 0 }}>•</span>
+                        <span>{line}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -1099,9 +1104,14 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                     <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', marginBottom: 3 }}>
                       {GAME_LABELS[r.game]}
                     </p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-                      {resolveNames(r.detail, room.players)}
-                    </p>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+                      {resolveNames(r.detail, room.players).split(' · ').map((line, k) => (
+                        <div key={k} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                          <span style={{ color: 'var(--muted)', flexShrink: 0 }}>•</span>
+                          <span>{line}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))
               ) : (results.buddyResults[viewHole]?.length ?? 0) === 0 && (results.oecdResults[viewHole]?.length ?? 0) === 0 && (results.eventResults[viewHole]?.length ?? 0) === 0 ? (
