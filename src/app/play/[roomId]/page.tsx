@@ -820,6 +820,13 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                 </div>
               )}
             </div>
+            {holeResults.some(r => r.carry) && (
+              <div style={{ background: '#fef2f2', padding: '11px 14px', borderTop: '1px solid #fecaca', textAlign: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>
+                  이월금액: {holeResults.filter(r => r.carry).reduce((s, r) => s + (r.carryTotal || 0), 0).toLocaleString()}원
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -1157,6 +1164,13 @@ export default function PlayPage({ params }: { params: Promise<{ roomId: string 
                       <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}> ({p.detail})</span>
                     </p>
                   ))}
+                </div>
+              )}
+              {holeResults.some(r => r.carry) && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '11px 12px', textAlign: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#dc2626' }}>
+                    이월금액: {holeResults.filter(r => r.carry).reduce((s, r) => s + (r.carryTotal || 0), 0).toLocaleString()}원
+                  </span>
                 </div>
               )}
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>

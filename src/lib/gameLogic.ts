@@ -777,7 +777,7 @@ export function calcAllResults(room: Room): {
       if (lines.length) detail += ' · ' + lines.join(' · ')
       results.push({
         game: 'jopok', winners: jopokWinner ? [jopokWinner] : [], loserPays: 0,
-        carry: !jopokWinner, carryTotal: 0, detail,
+        carry: !jopokWinner, carryTotal: jopokWinner ? 0 : jopokCarry, detail,
       })
     }
 
