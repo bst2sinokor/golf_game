@@ -233,26 +233,38 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <stop offset="0" stopColor="#fbe89a" /><stop offset="0.5" stopColor="#dca81f" /><stop offset="1" stopColor="#8a5d08" />
               </linearGradient>
             </defs>
-            {/* 월계수 링 — 메달을 360° 감싸는 leaf 링 (참조 이미지) */}
-            <circle cx="88" cy="84" r="45" fill="none" stroke="url(#goldV)" strokeWidth="1.4" opacity="0.85" />
-            <g fill="url(#goldLeaf)" stroke="#6e4905" strokeWidth="0.35">
+            {/* 월계수 — 아래에서 위로 열린 U자 화관 (스샷 참조) */}
+            {/* 가지 줄기 */}
+            <g stroke="url(#goldV)" strokeWidth="2.2" strokeLinecap="round" fill="none">
+              <path d="M86 124 C64 122 44 108 38 84 C34 67 38 52 47 41" />
+              <path d="M90 124 C112 122 132 108 138 84 C142 67 138 52 129 41" />
+            </g>
+            {/* 잎 (좌우 가지, 위로 쓸려 겹침) */}
+            <g fill="url(#goldLeaf)" stroke="#6e4905" strokeWidth="0.4">
               {(() => {
-                const cx = 88, cy = 84, R = 45, N = 42
+                const cx = 88, cy = 84, R = 40, N = 11
                 const out = []
-                for (let k = 0; k < N; k++) {
-                  const th = (k / N) * 2 * Math.PI
-                  const x = cx + R * Math.sin(th)
-                  const y = cy - R * Math.cos(th)
-                  const a = Math.atan2(Math.cos(th), -Math.sin(th)) * 180 / Math.PI + 20
-                  out.push(
-                    <path key={k}
-                      d="M0 0 C -2 -3.8 -1.8 -9 0 -12 C 1.8 -9 2 -3.8 0 0 Z"
-                      transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)}) scale(0.95)`} />
-                  )
+                for (const side of [-1, 1]) {
+                  for (let k = 0; k < N; k++) {
+                    const t = k / (N - 1)
+                    const beta = (15 + t * 135) * Math.PI / 180
+                    const x = cx + side * R * Math.sin(beta)
+                    const y = cy + R * Math.cos(beta)
+                    const tan = Math.atan2(side * Math.cos(beta), Math.sin(beta)) * 180 / Math.PI
+                    const a = tan + side * 15
+                    const s = 1.0 + 0.25 * Math.sin(t * Math.PI)
+                    out.push(
+                      <path key={`${side}-${k}`}
+                        d="M0 0 C -3 -5.5 -2.6 -13 0 -17.5 C 2.6 -13 3 -5.5 0 0 Z"
+                        transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)}) scale(${s.toFixed(2)})`} />
+                    )
+                  }
                 }
                 return out
               })()}
             </g>
+            {/* 바닥 가지 교차점 */}
+            <g fill="url(#goldV)"><circle cx="86" cy="124" r="1.8" /><circle cx="90" cy="124" r="1.8" /></g>
             {/* 골프 메달 (중앙) */}
             <circle cx="88" cy="84" r="30" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.8" />
             <circle cx="88" cy="84" r="30" fill="url(#sheen)" />
