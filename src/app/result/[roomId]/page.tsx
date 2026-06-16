@@ -167,7 +167,42 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ fontSize: 48 }}>🏆</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산">
+            <defs>
+              <linearGradient id="medal" x1="40" y1="9" x2="40" y2="65" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#1f9d54" />
+                <stop offset="1" stopColor="#13532e" />
+              </linearGradient>
+              <radialGradient id="sheen" cx="0.35" cy="0.28" r="0.85">
+                <stop stopColor="#ffffff" stopOpacity="0.20" />
+                <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            {/* 월계수 (좌·우, 금색, 절제) */}
+            <g stroke="#cda349" strokeWidth="2" strokeLinecap="round" fill="none">
+              <path d="M22 64 C13 56 12 44 18 36" />
+              <path d="M58 64 C67 56 68 44 62 36" />
+            </g>
+            <g fill="#cda349">
+              <ellipse cx="15.5" cy="40" rx="4.2" ry="1.9" transform="rotate(-18 15.5 40)" />
+              <ellipse cx="15" cy="47" rx="4.2" ry="1.9" transform="rotate(-2 15 47)" />
+              <ellipse cx="17.5" cy="54" rx="4" ry="1.8" transform="rotate(20 17.5 54)" />
+              <ellipse cx="64.5" cy="40" rx="4.2" ry="1.9" transform="rotate(18 64.5 40)" />
+              <ellipse cx="65" cy="47" rx="4.2" ry="1.9" transform="rotate(2 65 47)" />
+              <ellipse cx="62.5" cy="54" rx="4" ry="1.8" transform="rotate(-20 62.5 54)" />
+            </g>
+            {/* 메달 본체 */}
+            <circle cx="40" cy="38" r="27" fill="url(#medal)" stroke="#cda349" strokeWidth="2.5" />
+            <circle cx="40" cy="38" r="27" fill="url(#sheen)" />
+            <circle cx="40" cy="38" r="22.5" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />
+            {/* 골프 깃발 엠블럼 */}
+            <line x1="35" y1="26" x2="35" y2="48" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
+            <path d="M35 25.5 L49 29.5 L35 33.5 Z" fill="#fde047" />
+            <circle cx="43.5" cy="47.5" r="3" fill="#ffffff" />
+            <path d="M27 49.5 Q40 46 53 49.5" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="2" fill="none" strokeLinecap="round" />
+          </svg>
+        </div>
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>최종 정산</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>방 코드: {roomId}</p>
       </div>
