@@ -39,7 +39,7 @@ function RankBadge({ rank }: { rank: number }) {
   const p = P[rank]
   const big = rank === 0  // 1등은 주위 반짝임 공간 확보
   return (
-    <svg width={big ? 42 : 26} height={big ? 42 : 26} viewBox={big ? '-8 -8 42 42' : '0 0 26 26'} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg width={26} height={26} viewBox="0 0 26 26" style={big ? { overflow: 'visible' } : undefined} fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id={p.id} x1="13" y1="2" x2="13" y2="24" gradientUnits="userSpaceOnUse">
           <stop stopColor={p.from} />
@@ -233,25 +233,26 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
                 <stop offset="0" stopColor="#fbe89a" /><stop offset="0.5" stopColor="#dca81f" /><stop offset="1" stopColor="#8a5d08" />
               </linearGradient>
             </defs>
-            {/* 월계수 줄기 */}
-            <g stroke="url(#goldV)" strokeWidth="2.4" strokeLinecap="round" fill="none">
-              <path d="M85 141 C55 135 33 112 33 86 C33 66 43 50 61 39" />
-              <path d="M91 141 C121 135 143 112 143 86 C143 66 133 50 115 39" />
+            {/* 월계수 링 — 메달을 360° 감싸는 leaf 링 (참조 이미지) */}
+            <circle cx="88" cy="84" r="45" fill="none" stroke="url(#goldV)" strokeWidth="1.4" opacity="0.85" />
+            <g fill="url(#goldLeaf)" stroke="#6e4905" strokeWidth="0.35">
+              {(() => {
+                const cx = 88, cy = 84, R = 45, N = 42
+                const out = []
+                for (let k = 0; k < N; k++) {
+                  const th = (k / N) * 2 * Math.PI
+                  const x = cx + R * Math.sin(th)
+                  const y = cy - R * Math.cos(th)
+                  const a = Math.atan2(Math.cos(th), -Math.sin(th)) * 180 / Math.PI + 20
+                  out.push(
+                    <path key={k}
+                      d="M0 0 C -2 -3.8 -1.8 -9 0 -12 C 1.8 -9 2 -3.8 0 0 Z"
+                      transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)}) scale(0.95)`} />
+                  )
+                }
+                return out
+              })()}
             </g>
-            {/* 월계수 잎 (메달 둘레) */}
-            <g fill="url(#goldLeaf)" stroke="#7e5406" strokeWidth="0.5">
-              {([
-                [76.4,140.8,192,1],[61.7,135.4,208,0.98],[49.1,126.3,224,0.95],[39.5,114,240,0.92],[33.7,99.5,256,0.88],
-                [32.1,84,272,0.85],[34.7,68.7,288,0.81],[41.6,54.7,304,0.77],[52,43.1,320,0.72],[65.2,34.8,336,0.67],
-                [99.6,140.8,168,1],[114.3,135.4,152,0.98],[126.9,126.3,136,0.95],[136.5,114,120,0.92],[142.3,99.5,104,0.88],
-                [143.9,84,88,0.85],[141.3,68.7,72,0.81],[134.4,54.7,56,0.77],[124,43.1,40,0.72],[110.8,34.8,24,0.67],
-              ] as [number,number,number,number][]).map(([x,y,r,s],i) => (
-                <path key={i} d="M0 0 C -3.6 -4.6 -3.2 -11 0 -16 C 3.2 -11 3.6 -4.6 0 0 Z"
-                  transform={`translate(${x} ${y}) rotate(${r + (i % 2 ? -16 : 16)}) scale(${s})`} />
-              ))}
-            </g>
-            {/* 바닥 매듭 점 */}
-            <g fill="url(#goldV)"><circle cx="84" cy="143" r="2" /><circle cx="92" cy="143" r="2" /></g>
             {/* 골프 메달 (중앙) */}
             <circle cx="88" cy="84" r="30" fill="url(#medal)" stroke="#d4af37" strokeWidth="2.8" />
             <circle cx="88" cy="84" r="30" fill="url(#sheen)" />
