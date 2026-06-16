@@ -724,19 +724,23 @@ export function calcAllResults(room: Room): {
     if (jopokCfg && jopokCfg.holes.includes(h) && holePlayers.length > 0) {
       const pname = (id: string) => room.players[id]?.name ?? id
       const lines: string[] = []
-      // ① 반납: 그동안 딴 누적 보유금의 일정 %를 토해냄 (홀 설정금액 단위 올림, 보유 한도 내)
+      // 이 홀에 버디(이상)이 있으면 강탈로 전원 보유금이 어차피 넘어가므로 반납(페널티)은 무의미 → 계산·표시 생략
+      const birdies = holePlayers.filter(id => (scores[id] ?? Infinity) <= holePar - 1)
+      // ① 반납: 그동안 딴 누적 보유금의 일정 %를 토해냄 (홀 설정금액 단위 올림, 보유 한도 내). 단, 버디 강탈 홀에서는 생략.
       let pool = 0
-      for (const pid of holePlayers) {
-        const diff = (scores[pid] ?? holePar) - holePar
-        const par3strict = jopokMode === 'par3strict' && holePar <= 3
-        let pct = 0
-        if (par3strict) { if (diff === 1) pct = 0.5; else if (diff >= 2) pct = 1 }
-        else { if (diff === 2) pct = 0.5; else if (diff >= 3) pct = 1 }
-        if (pct > 0 && jopokHold[pid] > 0 && jopokBet > 0) {
-          let amt = Math.ceil((jopokHold[pid] * pct) / jopokBet) * jopokBet  // 설정금액 단위 올림
-          amt = Math.min(amt, jopokHold[pid])                                // 보유 한도
-          jopokHold[pid] -= amt; pool += amt
-          lines.push(`${pname(pid)} 반납 (-${amt.toLocaleString()}원)`)
+      if (birdies.length === 0) {
+        for (const pid of holePlayers) {
+          const diff = (scores[pid] ?? holePar) - holePar
+          const par3strict = jopokMode === 'par3strict' && holePar <= 3
+          let pct = 0
+          if (par3strict) { if (diff === 1) pct = 0.5; else if (diff >= 2) pct = 1 }
+          else { if (diff === 2) pct = 0.5; else if (diff >= 3) pct = 1 }
+          if (pct > 0 && jopokHold[pid] > 0 && jopokBet > 0) {
+            let amt = Math.ceil((jopokHold[pid] * pct) / jopokBet) * jopokBet  // 설정금액 단위 올림
+            amt = Math.min(amt, jopokHold[pid])                                // 보유 한도
+            jopokHold[pid] -= amt; pool += amt
+            lines.push(`${pname(pid)} 반납 (-${amt.toLocaleString()}원)`)
+          }
         }
       }
       // ② 최저타 승자가 스킨+반납금 독식, 동타면 다음 홀 이월
@@ -747,7 +751,6 @@ export function calcAllResults(room: Room): {
       if (lowest.length === 1) { jopokWinner = lowest[0]; jopokHold[jopokWinner] += skinPot; jopokCarry = 0 }
       else { jopokCarry = skinPot }
       // ③ 버디(이상) 강탈: 버디한 사람이 나머지 전원의 보유금을 가져옴 (버디 여럿이면 균등 분배)
-      const birdies = holePlayers.filter(id => (scores[id] ?? Infinity) <= holePar - 1)
       if (birdies.length > 0) {
         let stealPot = 0
         for (const pid of holePlayers) {
