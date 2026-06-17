@@ -135,10 +135,18 @@ export default function Home() {
           </button>
         </div>
 
-        <p style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
-          방에서 입력한 모든 데이터는 만든 다음 날 밤<br />
-          자동으로 삭제돼요. (오늘 만들면 → 내일 밤까지 보관)
-        </p>
+        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 20, lineHeight: 1.6, maxWidth: 330, marginLeft: 'auto', marginRight: 'auto' }}>
+          <p style={{ margin: '0 0 8px', display: 'flex', gap: 6 }}>
+            <span style={{ flexShrink: 0 }}>•</span>
+            <span>진행자가 방 만들고 방코드 공유 → 동반자들 각자 폰에서 참가</span>
+          </p>
+          <p style={{ margin: 0, display: 'flex', gap: 6 }}>
+            <span style={{ flexShrink: 0 }}>•</span>
+            <span>모든 데이터는 다음 날 자정에 자동으로 삭제돼요.<br />
+              <span style={{ fontSize: 12, opacity: .85 }}>(오늘 만들면 → 내일 밤까지 보관)</span>
+            </span>
+          </p>
+        </div>
 
         <div style={{ textAlign: 'center', marginTop: 32 }}>
           <SupportButton variant="link" />
