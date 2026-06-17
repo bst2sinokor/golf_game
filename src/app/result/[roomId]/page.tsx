@@ -490,9 +490,11 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
             <DownloadIcon />{saving === 'board' ? '저장 중…' : '스코어보드 저장'}
           </button>
         </div>
-        <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
-          스코어보드 보기
-        </button>
+        {myId === room.hostPlayerId && (
+          <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
+            스코어보드 수정
+          </button>
+        )}
         <div style={{ textAlign: 'center', marginTop: 18 }}>
           <SupportButton variant="link" />
         </div>
