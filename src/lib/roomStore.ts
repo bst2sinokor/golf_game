@@ -15,10 +15,10 @@ function generateRoomId(): string {
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
-// 생성된 지 7일 지난 방 자동 삭제
+// 생성된 지 48시간 지난 방 자동 삭제
 async function cleanupOldRooms(): Promise<void> {
   try {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000
     const q = query(collection(db, 'rooms'), where('createdAt', '<', cutoff))
     const snap = await getDocs(q)
     await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
