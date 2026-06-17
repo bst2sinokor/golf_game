@@ -491,7 +491,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
           </button>
         </div>
         {myId === room.hostPlayerId && (
-          <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
+          <button className="btn" style={{ marginBottom: 8, background: '#ea580c', color: '#fff' }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
             스코어보드 수정
           </button>
         )}
