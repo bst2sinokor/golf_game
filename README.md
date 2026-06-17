@@ -3,8 +3,9 @@
 ## 프로젝트 개요
 골프 라운드 중 동반자들이 각자 폰으로 접속해 점수를 입력하면, 선택한 내기 게임들의 손익을 실시간으로 자동 계산해주는 웹앱. 진행자가 방을 만들고 숫자 4자리 방코드를 공유하면 참가자들이 합류한다.
 
-- **프레임워크**: Next.js 14 (App Router) + TypeScript + Tailwind CSS v4
+- **프레임워크**: Next.js 16 (16.2.9, App Router) + React 19 + TypeScript + Tailwind CSS v4
 - **실시간 DB**: Firebase Firestore (`onSnapshot` 구독)
+- **이미지 저장**: `html-to-image` (결과 화면 → JPEG)
 - **배포**: Vercel — https://golf-game-nine.vercel.app
 - **저장소**: 모노레포(`UBUNTU_DEV`)에서 개발, 배포용 단독 저장소 https://github.com/bst2sinokor/golf_game 로 subtree push
 
@@ -16,19 +17,24 @@
 106-golf-game/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx               # 첫 화면 (방 만들기 / 방 참가하기 + 좌측 상단 [사용방법])
-│   │   ├── layout.tsx             # 루트 레이아웃, viewport 설정
-│   │   ├── globals.css            # 전역 스타일, 애니메이션 (livePulse, waitBlink)
+│   │   ├── page.tsx               # 첫 화면 (방 만들기(녹색)/방 참가하기(파랑) 탭 + 좌측 상단 [사용방법] + 응원하기)
+│   │   ├── layout.tsx             # 루트 레이아웃, viewport 설정 + InAppBrowserGuard 마운트
+│   │   ├── icon.svg               # 파비콘 (녹색 방패 + 금색 깃발 커스텀 SVG)
+│   │   ├── globals.css            # 전역 스타일, 애니메이션 (livePulse, waitBlink, ringPulse, medalTwinkle)
 │   │   ├── setup/[roomId]/        # 진행자 게임 설정 (코스→기본→게임선택→금액→시작)
 │   │   ├── play/[roomId]/         # 메인 플레이 화면 (스코어보드, 점수 입력)
-│   │   └── result/[roomId]/       # 최종 정산 결과
+│   │   └── result/[roomId]/       # 최종 정산 결과 (엠블럼·손익·홀결과·스코어보드·JPEG 저장)
 │   ├── components/
 │   │   ├── GameSettings.tsx       # 게임 중 설정 변경 (플레이어 관리 포함)
 │   │   ├── HowToModal.tsx         # 사용방법 가이드 (간단요약(흐름 다이어그램)/진행자/참여자/게임 룰/공통 규칙)
-│   │   └── GuideText.tsx          # 설명 텍스트 디자인 렌더러 + 게임별 색(GAME_COLOR) — 사용방법·(?)팝업 공용
+│   │   ├── GuideText.tsx          # 설명 텍스트 디자인 렌더러 + 게임별 색(GAME_COLOR) — 사용방법·(?)팝업 공용
+│   │   ├── InAppBrowserGuard.tsx  # 메신저 인앱 브라우저 감지 → 외부 브라우저 전환(안드 자동/iOS 안내)
+│   │   └── SupportButton.tsx      # 광고 없는 앱 유지를 위한 응원(후원) 모달 — 카카오/네이버페이
 │   └── lib/
 │       ├── firebase.ts            # Firebase 초기화 (환경변수 기반)
 │       ├── gameInfo.ts            # 게임별 상세 룰·옵션 설명 (GAME_DETAIL, (?) 팝업·사용방법 공용)
+│       ├── golfClubs.ts           # 전국 골프장명 시드 DB (공공데이터) — 코스설정 검색·오타보정용
+│       ├── donation.ts            # 후원 링크(카카오페이/네이버페이) + 활성화 플래그
 │       ├── roomStore.ts           # Firestore CRUD (방 생성/참가/구독/정리)
 │       ├── gameLogic.ts           # 정산 계산 엔진 (calcAllResults)
 │       └── types.ts               # 타입 정의 (Room, GameConfig, PlayerTotals 등)
@@ -98,7 +104,7 @@
 
 ### 4. 게임 설정 (`app/setup/`, `components/GameSettings.tsx`)
 - setup: 코스설정 → 기본설정 → 게임선택 → 금액설정 단계별 [다음] 버튼, 금액설정에서 [게임 시작]
-- 코스설정: 골프장·전반/후반 코스 입력 + [확정] → 저장된 코스면 홀별 파 자동 적용, 없으면 파4 기본. 저장된 조합은 원터치 칩으로 선택. 확정 전 홀파는 미선택, 18홀 전부 설정해야 진행. 9홀씩 한 줄, 홀 번호 아래 파 표시(파3 점, 파5 막대). [다음] 시 9홀 코스 단위로 `coursePresets`·`courseCombos` 저장
+- 코스설정: 골프장명 입력 후 [검색] → 전국 골프장 시드 DB(`golfClubs.ts`, 공공데이터)와 누적 저장 코스에서 오타보정 매칭(`matchClubs`/`normClub`), 정확·단일 일치면 코스 선택 단계로 바로 진입. 저장된 코스면 전반/후반 선택 시 홀별 파 자동 적용, 미저장 코스면 직접 파 입력(이후 모든 사용자에게 누적 공유). 확정 전 홀파는 미선택, 18홀 전부 설정해야 진행. 9홀씩 한 줄, 홀 번호 아래 파 표시(파3 점, 파5 막대). [다음] 시 9홀 코스 단위로 `coursePresets`·`courseCombos` 저장
 - 기본설정 탭: 기본금액 분배(버디와 독립, 기본 10,000원) + 팀 구성 미정 시(진행자 배정 / A.I 랜덤배정 — 라스베가스·후세인 팀/역할 미정 시, 홀 시드 기반 결정적 랜덤, **기본 A.I 랜덤배정**) + 팀게임 이월시 다음게임 팀구성(기본 팀 유지) + OECD 설정(18홀 해제/유지 포함) + 버디값 설정(같은 팀 받기 토글 — 기본 안받기)
 - 게임선택 탭: 일반 게임 + Additional Option(신페리오 — 위 게임과 병행 진행) + 니어리스트·롱기스트(적용 홀·금액, 진행자가 홀에서 당첨자/PASS 선택, 선택 완료까지 홀 결과·다음홀 보류, 당첨금 은행→지갑). 모든 게임/이벤트 옆 (?)로 룰 팝업(GuideText 스타일)
   - 니어리스트: 온그린 중 핀 최근접자가 Par 이상 시 상금. '지우개' 룰(온그린 못한 사람이 Par 이상이면 무효)
@@ -113,9 +119,16 @@
 - 게임 중 설정(GameSettings): 플레이어 관리(▲▼ 순서 변경, 삭제), 동일 설정 항목
 
 ### 5. 최종 정산 결과 (`app/result/[roomId]/page.tsx`)
-- 월계수 화관 엠블럼 + 최종 손익(금/은/동 메달 배지·1위 반짝임), 게임별 홀 결과
-- 스코어보드 상단에 **골프장명 + 전반/후반 코스명** 표기
-- JPEG 저장(`html-to-image`): **[최종정산 저장]** = 버튼 영역(`data-no-capture`) 제외 결과 화면 전체 / **[스코어보드 저장]** = 골프장명·코스명 + 전·후반 스코어카드만. 파일명 `{골프장}_최종정산|스코어보드_YYYYMMDD.jpg`
+- 월계수 화관 엠블럼(메달 중앙, 커스텀 SVG) + 최종 손익(금/은/동 메달 배지·1위 반짝임), 게임별 홀 결과
+- 스코어보드 상단에 **골프장명 + 전반/후반 코스명**, 우측 상단에 게임 날짜(`createdAt` → `YY.MM.DD`) 표기
+- JPEG 저장(`html-to-image`): **[최종정산 저장]** = 버튼 영역(`data-no-capture`) 제외 결과 화면 전체 / **[스코어보드 저장]** = 골프장명·코스명·날짜 + 전·후반 스코어카드만. 파일명 `{골프장}_최종정산|스코어보드_YYYYMMDD.jpg` (저장 버튼은 진행자·참가자 모두 표시)
+- **[스코어보드 수정]**(주황): 진행자만 표시(`myId === hostPlayerId`), `?view=1`로 플레이 화면 이동해 종료 후에도 점수 수정 가능. 참가자에겐 미표시
+- 하단 응원(후원) 링크(`SupportButton`)
+
+### 6. 공통 UI / 부가 기능
+- **인앱 브라우저 가드**(`InAppBrowserGuard`, layout 마운트): 카카오톡 등 메신저 인앱 브라우저 감지 → 안드로이드는 외부 브라우저 자동 전환, iOS는 안내 배너 (Firebase 인증·다운로드 정상 동작 위해)
+- **응원(후원)**(`SupportButton`/`donation.ts`): 광고 없는 앱 유지 취지, 첫 화면 푸터 + 결과 화면에 진입점. 카카오페이/네이버페이 링크 모달
+- **아이콘 정책**: 범용 이모지 대신 브랜드 커스텀 SVG(녹색 방패+금색 깃발 모티프) — 파비콘·메달·커피·다운로드·셰브론 등
 
 ---
 
