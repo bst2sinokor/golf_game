@@ -708,7 +708,16 @@ export function calcAllResults(room: Room): {
     // 스크레치 (홀별 누적)
     const scratchCfg = room.config.games.find(g => g.type === 'scratch' && g.holes.includes(h))
     if (scratchCfg && Object.keys(scores).length > 0) {
-      const deltas = calcScratch(scores, scratchCfg)
+      // 한 명이라도 버디(이상) 또는 트리플보기(이상)면 그 홀 정산 ×2
+      const scratchPar = room.config.holePars[h - 1] ?? 4
+      const scratchDoubled = Object.values(scores).some(s => {
+        const d = s - scratchPar
+        return d <= -1 || d >= 3
+      })
+      const rawDeltas = calcScratch(scores, scratchCfg)
+      const deltas = scratchDoubled
+        ? Object.fromEntries(Object.entries(rawDeltas).map(([id, v]) => [id, v * 2]))
+        : rawDeltas
       for (const [id, d] of Object.entries(deltas)) {
         gameDeltas[id] = (gameDeltas[id] ?? 0) + d
         walletGains[id] = (walletGains[id] ?? 0) + d  // 스크레치는 지갑↔지갑 (손익 모두 반영)
@@ -728,10 +737,13 @@ export function calcAllResults(room: Room): {
         if (debtors[di].amt === 0) di++
         if (creditors[ci].amt === 0) ci++
       }
+      const scratchLines: string[] = []
+      if (scratchDoubled) scratchLines.push('정산 2배 (버디·트리플 발생)')
+      scratchLines.push(...(transfers.length > 0 ? transfers : ['전원 동타 (정산 없음)']))
       results.push({
         game: 'scratch', winners: [], loserPays: 0,
         carry: false, carryTotal: 0,
-        detail: transfers.length > 0 ? transfers.join('\n') : '전원 동타 (정산 없음)',
+        detail: scratchLines.join('\n'),
       })
     }
 
