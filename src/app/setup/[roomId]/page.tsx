@@ -99,11 +99,11 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
   const [initAmounts, setInitAmounts] = useState<Record<string, number>>({})
   // OECD
   const [oecd, setOecd] = useState<OecdConfig>({
-    enabled: false, lastHoleRelease: true, threshold: 60000, penaltyPerEvent: 10000, maxPerHole: 20000,
+    enabled: true, lastHoleRelease: true, threshold: 60000, penaltyPerEvent: 10000, maxPerHole: 20000,
   })
   // 버디
   const [buddy, setBuddy] = useState<BuddyConfig>({
-    enabled: false, baseDistribution: 10000, buddyValue: 0, collectFromTeammates: false,
+    enabled: true, baseDistribution: 10000, buddyValue: 10000, collectFromTeammates: false,
   })
   // 니어·롱기스트
   const [nearest, setNearest] = useState<EventConfig>({ enabled: false, holes: [], amount: 10000 })

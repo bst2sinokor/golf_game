@@ -62,7 +62,7 @@ export default function GameSettings({ room, roomId, myId }: Props) {
   })
   const [oecd, setOecd] = useState<OecdConfig>(() => ({ ...room.config.oecd }))
   const [buddy, setBuddy] = useState<BuddyConfig>(() => ({
-    ...( room.config.buddy ?? { enabled: false, baseDistribution: 10000, buddyValue: 0 })
+    ...( room.config.buddy ?? { enabled: true, baseDistribution: 10000, buddyValue: 10000 })
   }))
   const [nearest, setNearest] = useState<EventConfig>(() => ({
     ...( room.config.nearest ?? { enabled: false, holes: [], amount: 10000 })
