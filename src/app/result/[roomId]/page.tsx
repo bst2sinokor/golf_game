@@ -402,7 +402,13 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
 
       {/* 스코어보드 (골프장·코스명 포함, 이미지 저장 대상) */}
       <div ref={boardRef} style={{ background: '#f1f5f9', borderRadius: 12, padding: 1 }}>
-        <div style={{ textAlign: 'center', padding: '4px 8px 12px' }}>
+        <div style={{ position: 'relative', textAlign: 'center', padding: '4px 8px 12px' }}>
+          <span style={{ position: 'absolute', bottom: 0, right: 8, fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>
+            {(() => {
+              const d = new Date(room.createdAt)
+              return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+            })()}
+          </span>
           {room.config.courseNames?.club && (
             <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
               {room.config.courseNames.club}
