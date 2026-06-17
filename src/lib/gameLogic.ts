@@ -582,7 +582,8 @@ export function calcAllResults(room: Room): {
   let sinperioDeltas: Record<string, number> = {}
   const oecdMembers = new Set<string>()
   const buddyCfg = room.config.buddy
-  const baseDistribution = buddyCfg?.baseDistribution ?? 0  // 버디 활성화와 무관하게 적용
+  // 기본분배금액은 게임 시작(status playing) 이후에만 지급. 시작 전(waiting)엔 0 — 미리 보유에 들어가지 않도록
+  const baseDistribution = room.status === 'waiting' ? 0 : (buddyCfg?.baseDistribution ?? 0)
 
   // 조폭 스킨스 (스킨스 + 반납/강탈, 18홀 전체·홀별 순차 누적). 버디값은 조폭 시 미적용.
   const jopokCfg = room.config.games.find(g => g.type === 'jopok')
