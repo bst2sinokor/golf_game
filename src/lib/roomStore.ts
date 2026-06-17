@@ -1,6 +1,6 @@
 import {
   doc, setDoc, onSnapshot, updateDoc, getDoc, getDocFromServer, deleteField,
-  collection, query, where, getDocs, deleteDoc,
+  collection, getDocs,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Room, HoleData, RoomConfig } from './types'
@@ -15,19 +15,10 @@ function generateRoomId(): string {
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
-// 생성된 지 48시간 지난 방 자동 삭제
-async function cleanupOldRooms(): Promise<void> {
-  try {
-    const cutoff = Date.now() - 48 * 60 * 60 * 1000
-    const q = query(collection(db, 'rooms'), where('createdAt', '<', cutoff))
-    const snap = await getDocs(q)
-    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
-  } catch { /* 정리 실패는 방 생성에 영향 없음 */ }
-}
+// 방 자동 삭제는 Vercel Cron(/api/cleanup)이 매일 KST 23:59에 처리한다.
+// (방 만든 날을 D-day로 보면 D+1일 23:59에 삭제. 클라이언트 즉시 정리는 조기 삭제 방지를 위해 제거)
 
 export async function createRoom(hostName: string): Promise<{ roomId: string; playerId: string }> {
-  void cleanupOldRooms()  // 백그라운드 정리 (대기하지 않음)
-
   // 코드 충돌 방지: 기존 방과 겹치지 않는 코드가 나올 때까지 재시도
   let roomId = generateRoomId()
   let ok = false

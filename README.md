@@ -21,6 +21,7 @@
 │   │   ├── layout.tsx             # 루트 레이아웃, viewport 설정 + InAppBrowserGuard 마운트
 │   │   ├── icon.svg               # 파비콘 (녹색 방패 + 금색 깃발 커스텀 SVG)
 │   │   ├── globals.css            # 전역 스타일, 애니메이션 (livePulse, waitBlink, ringPulse, medalTwinkle)
+│   │   ├── api/cleanup/route.ts   # 방 자동 삭제 cron 엔드포인트 (Vercel Cron이 매일 호출)
 │   │   ├── setup/[roomId]/        # 진행자 게임 설정 (코스→기본→게임선택→금액→시작)
 │   │   ├── play/[roomId]/         # 메인 플레이 화면 (스코어보드, 점수 입력)
 │   │   └── result/[roomId]/       # 최종 정산 결과 (엠블럼·손익·홀결과·스코어보드·JPEG 저장)
@@ -38,6 +39,7 @@
 │       ├── roomStore.ts           # Firestore CRUD (방 생성/참가/구독/정리)
 │       ├── gameLogic.ts           # 정산 계산 엔진 (calcAllResults)
 │       └── types.ts               # 타입 정의 (Room, GameConfig, PlayerTotals 등)
+├── vercel.json                    # Vercel Cron 설정 (매일 14:59 UTC = KST 23:59)
 ├── .env.local                     # Firebase 키 (git 제외)
 └── package.json
 ```
@@ -86,7 +88,7 @@
 
 ### 2. 방 관리 (`lib/roomStore.ts`)
 - 방코드: 숫자 4자리, 생성 시 기존 방과 충돌 검사 (최대 10회 재시도, 덮어쓰기 차단)
-- 생성 48시간 경과 방 자동 삭제 (방 생성 시 백그라운드 정리)
+- 방 자동 삭제: **Vercel Cron**(`vercel.json` → `/api/cleanup`, 매일 14:59 UTC = KST 23:59)이 생성일이 'KST 오늘 0시' 이전인 방을 삭제 → 방 만든 날(D-day) 기준 **D+1일 23:59에 삭제**. 클라이언트 즉시 정리는 조기 삭제 방지를 위해 제거. 라우트는 `CRON_SECRET` 설정 시 `Authorization: Bearer` 검증
 - `fetchRoomFromServer`: 모바일 절전 복귀 시 서버 강제 동기화용
 - 게임 시작 시 1번홀 티샷 순서 랜덤 생성(Fisher-Yates) 후 저장
 
@@ -145,6 +147,8 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 ```
 Vercel에는 프로젝트 Settings → Environment Variables에 동일하게 등록 (빌드 타임 반영이므로 변경 시 Redeploy 필요).
 
+추가로 **`CRON_SECRET`**(임의 문자열)을 Vercel 환경변수에 등록하면, Vercel Cron이 `/api/cleanup` 호출 시 `Authorization: Bearer <CRON_SECRET>`를 자동 첨부하고 라우트가 이를 검증해 외부의 임의 호출을 차단한다. (미설정 시 라우트는 누구나 호출 가능 — 단 만료된 방만 지우므로 위험도는 낮음)
+
 ---
 
 ## 실행 / 배포
@@ -172,5 +176,5 @@ git branch -D golf-game-split
 3. **모바일 드래그 불가** — 플레이어 순서 변경을 HTML5 DnD에서 ▲▼ 버튼으로 교체
 4. **모바일 절전 후 동기화 지연** — `visibilitychange` 시 `getDocFromServer`로 강제 동기화
 5. **기기마다 스코어보드 순서 상이** — Firestore 맵 키 순서 의존 제거, 결정적 정렬(`orderedPlayerIds`) 도입
-6. **방코드 충돌로 기존 방 덮어쓰기 위험** — 생성 시 존재 확인 + 재시도, 48시간 경과 방 자동 정리
+6. **방코드 충돌로 기존 방 덮어쓰기 위험** — 생성 시 존재 확인 + 재시도. 방 자동 삭제는 Vercel Cron(`/api/cleanup`)이 매일 KST 23:59에 처리(D+1일 23:59)
 7. **팀구성 텍스트 잘림** — 게임 태그 줄을 헤더 밖 전체 폭 영역으로 분리, FitText로 폭 부족 시 글자 축소

@@ -136,8 +136,8 @@ export default function Home() {
         </div>
 
         <p style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
-          모든 데이터는 방이 만들어진 시점으로부터<br />
-          48시간 후 자동으로 삭제됩니다.
+          방에서 입력한 모든 데이터는 만든 다음 날 밤<br />
+          자동으로 삭제돼요. (오늘 만들면 → 내일 밤까지 보관)
         </p>
 
         <div style={{ textAlign: 'center', marginTop: 32 }}>
