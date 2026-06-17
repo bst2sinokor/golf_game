@@ -88,16 +88,104 @@ const COMMON_GUIDE = `돈이 어떻게 늘고 주는지 쉽게 알려드릴게�
 
 (진행 중에는 진행자가 해당 홀에서 당첨자 또는 PASS를 직접 선택해요)`
 
-type Section = 'host' | 'player' | 'games' | 'common'
+// ── 간단요약: 진행 흐름 다이어그램 ──
+const FLOW_STEPS: { t: string; d: string; chips?: string[]; tag?: string }[] = [
+  {
+    t: '방 만들고 모이기',
+    d: '진행자가 [방 만들기]로 4자리 코드를 만들고, 같이 치는 사람은 [방 참가하기]에 그 코드를 넣어 들어와요.',
+  },
+  {
+    t: '게임 설정 (진행자)',
+    d: '위쪽 탭을 차례로 누르며 정한 뒤 [게임 시작]을 눌러요.',
+    chips: ['코스설정', '기본설정', '게임선택', '금액설정'],
+  },
+  {
+    t: '홀 진행',
+    d: '각자 자기 점수를 넣어요. 전원이 넣으면 그 홀 결과가 나오고, 진행자가 다음 홀로 넘겨요.',
+    chips: ['점수 입력', '홀 결과', '다음 홀'],
+    tag: '× 18홀 반복',
+  },
+  {
+    t: '최종 정산',
+    d: '18홀이 끝나면 누가 누구에게 얼마를 주면 되는지 자동으로 나와요. 스코어보드는 이미지로 저장할 수 있어요.',
+  },
+]
+
+function FlowArrow() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '3px 0' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 9l6 6 6-6" stroke="#86efac" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  )
+}
+
+function QuickGuide() {
+  return (
+    <div>
+      <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.55 }}>
+        전체 흐름을 한눈에! <b style={{ color: 'var(--text)' }}>이 순서</b>로 진행돼요.
+      </p>
+      {FLOW_STEPS.map((s, i) => (
+        <div key={i}>
+          <div style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start',
+            border: '1px solid var(--border)', borderRadius: 12, padding: '11px 12px',
+            borderLeft: '4px solid #16a34a', background: '#fff',
+          }}>
+            <span style={{
+              width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg, #16a34a, #14532d)', color: '#fff',
+              fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}>{i + 1}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text)' }}>{s.t}</span>
+                {s.tag && (
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 800, color: '#4338ca', background: '#eef2ff',
+                    borderRadius: 999, padding: '2px 7px',
+                  }}>{s.tag}</span>
+                )}
+              </div>
+              <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '4px 0 0', lineHeight: 1.5 }}>{s.d}</p>
+              {s.chips && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4, marginTop: 7 }}>
+                  {s.chips.map((c, k) => (
+                    <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: '#15803d', background: '#dcfce7',
+                        borderRadius: 999, padding: '3px 9px',
+                      }}>{c}</span>
+                      {k < s.chips!.length - 1 && <span style={{ color: 'var(--muted)', fontSize: 12 }}>›</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {i < FLOW_STEPS.length - 1 && <FlowArrow />}
+        </div>
+      ))}
+      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '14px 0 0', lineHeight: 1.55 }}>
+        더 자세한 내용은 위 <b style={{ color: 'var(--text)' }}>진행자 · 참여자 · 게임 룰 · 공통 규칙</b> 탭에서 볼 수 있어요.
+      </p>
+    </div>
+  )
+}
+
+type Section = 'quick' | 'host' | 'player' | 'games' | 'common'
 
 export default function HowToModal({ onClose }: { onClose: () => void }) {
-  const [section, setSection] = useState<Section>('host')
+  const [section, setSection] = useState<Section>('quick')
   const bodyRef = useRef<HTMLDivElement>(null)
 
   // 탭 전환 시 본문 스크롤을 맨 위로
   useEffect(() => { bodyRef.current?.scrollTo({ top: 0 }) }, [section])
 
   const TABS: { v: Section; l: string }[] = [
+    { v: 'quick', l: '간단요약' },
     { v: 'host', l: '진행자' },
     { v: 'player', l: '참여자' },
     { v: 'games', l: '게임 룰' },
@@ -128,10 +216,11 @@ export default function HowToModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* 섹션 탭 */}
-        <div style={{ display: 'flex', gap: 4, padding: '10px 12px', borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+        <div style={{ display: 'flex', gap: 3, padding: '10px 10px', borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
           {TABS.map(({ v, l }) => (
             <button key={v} onClick={() => setSection(v)} style={{
-              flex: 1, padding: '8px 2px', borderRadius: 8, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+              flex: 1, padding: '8px 1px', borderRadius: 8, cursor: 'pointer', fontSize: 11.5, fontWeight: 700,
+              whiteSpace: 'nowrap',
               border: '1px solid var(--border)',
               background: section === v ? 'var(--blue)' : '#fff',
               color: section === v ? '#fff' : 'var(--muted)',
@@ -142,6 +231,7 @@ export default function HowToModal({ onClose }: { onClose: () => void }) {
 
         {/* 본문 */}
         <div ref={bodyRef} style={{ padding: 16, overflowY: 'auto', color: 'var(--text)' }}>
+          {section === 'quick' && <QuickGuide />}
           {section === 'host' && <GuideText text={HOST_GUIDE} accent="#16a34a" />}
           {section === 'player' && <GuideText text={PLAYER_GUIDE} accent="#2563eb" />}
           {section === 'common' && <GuideText text={COMMON_GUIDE} accent="#d97706" />}
