@@ -705,6 +705,7 @@ export default function SetupPage({ params }: { params: Promise<{ roomId: string
               <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
                 <input type="text" value={club}
                   onChange={e => { setClub(e.target.value); setCourseConfirmed(false) }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); openCourseModal() } }}
                   placeholder="골프장 이름"
                   style={{ flex: 1, minWidth: 0 }} />
                 <button onClick={openCourseModal} style={{
