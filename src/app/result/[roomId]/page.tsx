@@ -1,11 +1,21 @@
 'use client'
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeRoom } from '@/lib/roomStore'
 import type { Room } from '@/lib/types'
 import { GAME_LABELS } from '@/lib/types'
 import { calcAllResults, orderedPlayerIds } from '@/lib/gameLogic'
 import SupportButton from '@/components/SupportButton'
+import { toJpeg } from 'html-to-image'
+
+// 다운로드 아이콘 (이모지 대신 커스텀 SVG)
+function DownloadIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 // 결과 문구의 플레이어 ID → 이름 치환
 function resolveNames(detail: string, players: Room['players']): string {
@@ -77,6 +87,35 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   const router = useRouter()
   const [room, setRoom] = useState<Room | null>(null)
   const [myId, setMyId] = useState('')
+  const [saving, setSaving] = useState<'' | 'full' | 'board'>('')
+  const fullRef = useRef<HTMLDivElement>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
+
+  // 화면 일부를 JPEG로 저장 (저장 버튼 등 data-no-capture 요소는 제외)
+  const saveJpeg = async (which: 'full' | 'board', fileBase: string) => {
+    const node = (which === 'full' ? fullRef : boardRef).current
+    if (!node || saving) return
+    setSaving(which)
+    try {
+      const dataUrl = await toJpeg(node, {
+        quality: 0.95,
+        pixelRatio: 2,
+        backgroundColor: '#f1f5f9',
+        filter: n => !(n instanceof HTMLElement && n.dataset.noCapture === 'true'),
+      })
+      const d = new Date()
+      const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `${fileBase}_${stamp}.jpg`
+      a.click()
+    } catch (e) {
+      console.error('이미지 저장 실패', e)
+      alert('이미지 저장에 실패했어요. 다시 시도해 주세요.')
+    } finally {
+      setSaving('')
+    }
+  }
 
   useEffect(() => {
     setMyId(
@@ -215,7 +254,7 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
+    <div ref={fullRef} style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 40px' }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
           <svg width="150" height="130" viewBox="0 0 176 152" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="최종 정산">
@@ -361,9 +400,21 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         </div>
       )}
 
-      {/* 스코어보드 */}
-      {renderScorecard('전반', 1)}
-      {renderScorecard('후반', 10)}
+      {/* 스코어보드 (골프장·코스명 포함, 이미지 저장 대상) */}
+      <div ref={boardRef} style={{ background: '#f1f5f9', borderRadius: 12, padding: 1 }}>
+        <div style={{ textAlign: 'center', padding: '4px 8px 12px' }}>
+          {room.config.courseNames?.club && (
+            <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+              {room.config.courseNames.club}
+            </p>
+          )}
+          <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '3px 0 0', fontWeight: 600 }}>
+            전반 {room.config.courseNames?.front || '1~9홀'} · 후반 {room.config.courseNames?.back || '10~18홀'}
+          </p>
+        </div>
+        {renderScorecard('전반', 1)}
+        {renderScorecard('후반', 10)}
+      </div>
       <div style={{ marginBottom: 16 }} />
 
       {/* 홀별 게임 결과 요약 */}
@@ -422,11 +473,23 @@ export default function ResultPage({ params }: { params: Promise<{ roomId: strin
         })}
       </div>
 
-      <button className="btn btn-green" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
-        스코어보드 보기
-      </button>
-      <div style={{ textAlign: 'center', marginTop: 18 }}>
-        <SupportButton variant="link" />
+      <div data-no-capture="true">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <button className="btn btn-green" style={{ flex: 1, gap: 6 }} disabled={!!saving}
+            onClick={() => saveJpeg('full', `${room.config.courseNames?.club || '골프'}_최종정산`)}>
+            <DownloadIcon />{saving === 'full' ? '저장 중…' : '최종정산 저장'}
+          </button>
+          <button className="btn btn-blue" style={{ flex: 1, gap: 6 }} disabled={!!saving}
+            onClick={() => saveJpeg('board', `${room.config.courseNames?.club || '골프'}_스코어보드`)}>
+            <DownloadIcon />{saving === 'board' ? '저장 중…' : '스코어보드 저장'}
+          </button>
+        </div>
+        <button className="btn btn-gray" style={{ marginBottom: 8 }} onClick={() => router.push(`/play/${roomId}?view=1`)}>
+          스코어보드 보기
+        </button>
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <SupportButton variant="link" />
+        </div>
       </div>
     </div>
   )
