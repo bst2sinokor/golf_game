@@ -136,8 +136,8 @@ export default function Home() {
         </div>
 
         <p style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
-          진행자가 방을 만들고 방 코드를 공유하면<br />
-          동반자들이 각자 폰에서 참가합니다.
+          모든 데이터는 방이 만들어진 시점으로부터<br />
+          48시간 후 자동으로 삭제됩니다.
         </p>
 
         <div style={{ textAlign: 'center', marginTop: 32 }}>
