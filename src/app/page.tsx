@@ -135,7 +135,7 @@ export default function Home() {
           </button>
         </div>
 
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 20, lineHeight: 1.6, maxWidth: 330, marginLeft: 'auto', marginRight: 'auto' }}>
+        <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 20, lineHeight: 1.6, maxWidth: 330, marginLeft: 'auto', marginRight: 'auto' }}>
           <p style={{ margin: '0 0 8px', display: 'flex', gap: 6 }}>
             <span style={{ flexShrink: 0 }}>•</span>
             <span>진행자가 방 만들고 방코드 공유 → 동반자들 각자 폰에서 참가</span>
