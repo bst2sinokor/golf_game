@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRoom, joinRoom } from '@/lib/roomStore'
 import HowToModal from '@/components/HowToModal'
-import SupportButton from '@/components/SupportButton'
 
 export default function Home() {
   const router = useRouter()
@@ -148,9 +147,6 @@ export default function Home() {
           </p>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
-          <SupportButton variant="link" />
-        </div>
       </div>
     </div>
   )
